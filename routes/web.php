@@ -2,14 +2,12 @@
 
 use Illuminate\Support\Facades\Route;
 
-// =======================
-// Auth Controller
-// =======================
+/*
+|--------------------------------------------------------------------------
+| Controllers
+|--------------------------------------------------------------------------
+*/
 use App\Http\Controllers\AuthController;
-
-// =======================
-// App Controllers
-// =======================
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KehadiranController;
 use App\Http\Controllers\PegawaiController;
@@ -18,6 +16,9 @@ use App\Http\Controllers\FingerprintController;
 use App\Http\Controllers\PenilaianController;
 use App\Http\Controllers\PeminjamanController;
 use App\Http\Controllers\BarangController;
+use App\Http\Controllers\PenghasilanController;
+use App\Http\Controllers\PotonganController;
+use App\Http\Controllers\SlipGajiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,14 +35,14 @@ Route::middleware('guest')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Authenticated Dashboard Routes (SUDAH LOGIN)
+| Authenticated Routes (SUDAH LOGIN)
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->prefix('dashboard')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | 🔥 DASHBOARD UTAMA
+    | DASHBOARD (ADMIN & PEGAWAI)
     |--------------------------------------------------------------------------
     */
     Route::get('/', [DashboardController::class, 'index'])
@@ -49,43 +50,51 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Pegawai & Kehadiran
+    | SLIP GAJI (ADMIN & PEGAWAI)
+    | - Admin   : bisa pilih pegawai
+    | - Pegawai : hanya lihat milik sendiri
     |--------------------------------------------------------------------------
     */
-    Route::resource('pegawai', PegawaiController::class);
-    Route::resource('kehadiran', KehadiranController::class);
+    Route::get('slip-gaji', [SlipGajiController::class, 'index'])
+        ->name('slip-gaji.index');
 
+    Route::get('slip-gaji/cetak/{pegawai}/{bulan}', [SlipGajiController::class, 'cetak'])
+        ->name('slip-gaji.cetak');
+
+    /*
+    |--------------------------------------------------------------------------
+    | ================= DATA MASTER (ADMIN)
+    | NOTE: Validasi role dilakukan di CONTROLLER
+    |--------------------------------------------------------------------------
+    */
+
+    // Pegawai
+    Route::resource('pegawai', PegawaiController::class);
     Route::post('pegawai/import', [PegawaiController::class, 'import'])
         ->name('pegawai.import');
+
+    // Kehadiran
+    Route::resource('kehadiran', KehadiranController::class);
     Route::post('kehadiran/import', [KehadiranController::class, 'import'])
         ->name('kehadiran.import');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Pengajuan
-    |--------------------------------------------------------------------------
-    */
+    // Penghasilan & Potongan
+    Route::resource('penghasilan', PenghasilanController::class);
+    Route::resource('potongan', PotonganController::class);
+
+    // Pengajuan
     Route::resource('pengajuan', PengajuanController::class);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Peminjaman
-    |--------------------------------------------------------------------------
-    */
+    // Barang & Peminjaman
+    Route::resource('barang', BarangController::class);
+    Route::post('barang/import', [BarangController::class, 'import'])
+        ->name('barang.import');
+
     Route::resource('peminjaman', PeminjamanController::class);
     Route::put(
         'peminjaman/{peminjaman}/kembalikan',
         [PeminjamanController::class, 'kembalikan']
     )->name('peminjaman.kembalikan');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Barang
-    |--------------------------------------------------------------------------
-    */
-    Route::resource('barang', BarangController::class);
-    Route::post('barang/import', [BarangController::class, 'import'])
-        ->name('barang.import');
 
     /*
     |--------------------------------------------------------------------------
@@ -118,7 +127,7 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Fingerprint
+    | Fingerprint (ADMIN)
     |--------------------------------------------------------------------------
     */
     Route::get('debug-fingerprint', [FingerprintController::class, 'debug'])
@@ -135,7 +144,7 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Logout
+    | LOGOUT
     |--------------------------------------------------------------------------
     */
     Route::post('logout', [AuthController::class, 'logout'])

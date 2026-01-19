@@ -14,18 +14,18 @@ class PegawaiController extends Controller
 {
     public function index()
     {
-        // Ambil pegawai aktif dengan pagination 
+        // Ambil pegawai aktif dengan pagination
         $pegawais = Pegawai::where('status', 'aktif')
             ->orderBy('nama')
-            ->paginate(20); 
+            ->paginate(20);
 
-        // Total pegawai aktif 
+        // Total pegawai aktif
         $totalPegawai = Pegawai::where('status', 'aktif')->count();
 
         return view('dashboard.pegawai.index', compact('pegawais', 'totalPegawai'));
     }
 
-    public function create() 
+    public function create()
     {
         return view('dashboard.pegawai.create');
     }
@@ -38,8 +38,8 @@ class PegawaiController extends Controller
             'status' => 'required|in:aktif,nonaktif',
             'nip' => 'required|string|unique:pegawai,nip',
             'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
-            'tempat_lahir' => 'required|string|max:255',
-            'tanggal_lahir' => 'required|date',
+            'tempat_lahir' => 'nullable|string|max:255',
+            'tanggal_lahir' => 'nullable|date',
             'jabatan' => 'required|string|max:255',
             'pangkat_golongan' => 'required|string|max:255',
             'foto' => 'required|image|mimes:jpg,jpeg,png|max:10240', // max 10MB
@@ -81,15 +81,15 @@ class PegawaiController extends Controller
 
     public function update(Request $request, Pegawai $pegawai)
     {
-        
+
         // Validasi input
         $validated = $request->validate([
             'nama'             => 'required|string|max:255',
             'status'           => 'required|in:aktif,nonaktif',
             'nip'              => 'required|string|max:50',
             'jenis_kelamin'    => 'required|string',
-            'tempat_lahir'     => 'required|string|max:255',
-            'tanggal_lahir'    => 'required|date',
+            'tempat_lahir'     => 'nullable|string|max:255',
+            'tanggal_lahir'    => 'nullable|date',
             'jabatan'          => 'required|string|max:255',
             'pangkat_golongan' => 'nullable|string|max:255',
             'foto'             => 'nullable|image|mimes:jpg,jpeg,png|max:10240',
@@ -119,7 +119,7 @@ class PegawaiController extends Controller
 
         // Ambil page dari request
         $page = $request->input('page', 1);
-        
+
         return redirect()->route('pegawai.index', ['page' => $page])
             ->with('success', 'Data berhasil diperbarui!');
     }
