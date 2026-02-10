@@ -102,11 +102,18 @@
 <span class="menu-header-text">Master Data</span>
 </li>
 
-<li class="menu-item {{ Request::is('dashboard/pegawai*')?'active':'' }}">
-<a href="{{ route('pegawai.index') }}" class="menu-link">
-<i class="menu-icon bx bx-user"></i><div>Data Pegawai</div>
-</a>
-</li>
+            <li class="menu-item {{ Request::is('dashboard/pegawai*') ? 'active' : '' }}">
+                <a href="{{ route('pegawai.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-user"></i>
+                    <div>Data Pegawai</div>
+                </a>
+            </li>
+             <li class="menu-item {{ Request::is('dashboard/akun-pegawai*') ? 'active' : '' }}">
+                <a href="{{ route('pegawai.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-user"></i>
+                    <div>Akun Pegawai</div>
+                </a>
+            </li>
 
 
 

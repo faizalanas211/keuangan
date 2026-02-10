@@ -82,6 +82,11 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
     Route::post('/profile/update-photo', [App\Http\Controllers\ProfileController::class, 'updatePhoto'])
     ->name('profile.photo.update');
 
+    Route::post('/pegawai/generate-akun', [PegawaiController::class, 'generateAkun'])
+    ->name('pegawai.generateAkun');
+    Route::post('/pegawai/generate-akun-semua', [PegawaiController::class, 'generateAkunSemua'])
+        ->name('pegawai.generateAkunSemua');
+
 
     // Kehadiran
     Route::resource('kehadiran', KehadiranController::class);

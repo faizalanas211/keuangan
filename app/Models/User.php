@@ -24,6 +24,7 @@ class User extends Authenticatable
         'nip',
         'pegawai_id',
         'role',
+        'must_change_password',
     ];
 
     /**

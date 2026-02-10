@@ -6,7 +6,6 @@ use App\Imports\PegawaiImport;
 use App\Models\Pegawai;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
@@ -18,7 +17,7 @@ class PegawaiController extends Controller
     {
         $pegawais = Pegawai::where('status', 'aktif')
             ->orderBy('nama')
-            ->paginate(20);
+            ->paginate(50);
 
         $totalPegawai = Pegawai::where('status', 'aktif')->count();
 
