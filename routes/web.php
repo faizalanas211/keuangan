@@ -72,6 +72,11 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
     Route::resource('pegawai', PegawaiController::class);
     Route::post('pegawai/import', [PegawaiController::class, 'import'])
         ->name('pegawai.import');
+    Route::post('/pegawai/generate-akun', [PegawaiController::class, 'generateAkun'])
+    ->name('pegawai.generateAkun');
+    Route::post('/pegawai/generate-akun-semua', [PegawaiController::class, 'generateAkunSemua'])
+        ->name('pegawai.generateAkunSemua');
+
 
     // Kehadiran
     Route::resource('kehadiran', KehadiranController::class);

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Imports\PegawaiImport;
 use App\Models\Pegawai;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
@@ -17,7 +16,7 @@ class PegawaiController extends Controller
         // Ambil pegawai aktif dengan pagination
         $pegawais = Pegawai::where('status', 'aktif')
             ->orderBy('nama')
-            ->paginate(20);
+            ->paginate(50);
 
         // Total pegawai aktif
         $totalPegawai = Pegawai::where('status', 'aktif')->count();
