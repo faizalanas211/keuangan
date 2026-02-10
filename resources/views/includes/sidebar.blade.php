@@ -62,9 +62,20 @@
 }
 </style>
 
-<div class="app-brand text-center py-3">
-<span class="fw-bold text-success">Slip Gaji</span>
+<div class="app-brand py-4 px-6 text-center">
+    <div class="d-flex justify-content-center align-items-center gap-2">
+        <i class="bx bx-wallet text-success" style="font-size:32px;"></i>
+        <div class="text-start">
+            <div class="fw-bold text-success" style="font-size:22px; line-height:1.2;">
+                Slip Gaji
+            </div>
+            <!-- <small class="text-muted" style="font-size:12px;">
+                Sistem Penggajian
+            </small> -->
+        </div>
+    </div>
 </div>
+
 
 <ul class="menu-inner py-1">
 
@@ -106,12 +117,6 @@
                 <a href="{{ route('pegawai.index') }}" class="menu-link">
                     <i class="menu-icon tf-icons bx bx-user"></i>
                     <div>Data Pegawai</div>
-                </a>
-            </li>
-             <li class="menu-item {{ Request::is('dashboard/akun-pegawai*') ? 'active' : '' }}">
-                <a href="{{ route('pegawai.index') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-user"></i>
-                    <div>Akun Pegawai</div>
                 </a>
             </li>
 

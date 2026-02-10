@@ -38,7 +38,7 @@
 
 <div class="alert alert-success">
 Setelah data pegawai disimpan, sistem otomatis membuat akun login.<br>
-Login menggunakan <b>NIP</b> dengan password awal <b>12345678</b>.
+Login menggunakan <b>NIP</b> dengan kata sandi awal sesuai <b>NIP masing-masing pegawai</b>.
 </div>
 
 <form action="{{ route('pegawai.store') }}" method="POST" enctype="multipart/form-data">

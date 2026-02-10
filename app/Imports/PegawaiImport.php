@@ -29,7 +29,7 @@ class PegawaiImport implements ToModel, WithHeadingRow
             'nip' => $pegawai->nip,
             'pegawai_id' => $pegawai->id,
             'role' => $row['role'] ?? 'pegawai',
-            'password' => Hash::make('12345678'),
+            'password' => Hash::make($pegawai->nip),
         ]);
 
         return $pegawai;

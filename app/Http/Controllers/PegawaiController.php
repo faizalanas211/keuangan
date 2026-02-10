@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Database\QueryException;
+use Maatwebsite\Excel\Validators\ValidationException as ExcelValidationException;
 
 class PegawaiController extends Controller
 {
@@ -72,7 +74,7 @@ class PegawaiController extends Controller
             'nip' => $pegawai->nip,
             'pegawai_id' => $pegawai->id,
             'role' => $request->role, // <-- sesuai pilihan admin / pegawai
-            'password' => Hash::make('12345678'),
+            'password' => Hash::make($pegawai->nip),
         ]);
 
         return redirect()->route('pegawai.index')
@@ -142,10 +144,31 @@ class PegawaiController extends Controller
             'file' => 'required|mimes:xlsx,xls'
         ]);
 
-        Excel::import(new PegawaiImport, $request->file('file'));
+        try {
 
-        return redirect()
-        ->route('pegawai.index')
-        ->with('success', 'Data pegawai berhasil diimpor!');
+            Excel::import(new PegawaiImport, $request->file('file'));
+
+            return redirect()
+                ->route('pegawai.index')
+                ->with('success', 'Data pegawai berhasil diimpor!');
+
+        } catch (ExcelValidationException $e) {
+
+            return redirect()
+                ->route('pegawai.index')
+                ->with('error', 'Terdapat data pegawai yang sudah terdaftar (NIP duplikat).');
+
+        } catch (QueryException $e) {
+
+            return redirect()
+                ->route('pegawai.index')
+                ->with('error', 'Gagal impor data. Pastikan tidak ada NIP yang sama di database.');
+
+        } catch (\Exception $e) {
+
+            return redirect()
+                ->route('pegawai.index')
+                ->with('error', 'Terjadi kesalahan saat impor data.');
+        }
     }
 }

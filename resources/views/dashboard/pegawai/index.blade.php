@@ -38,9 +38,6 @@
     <div class="d-flex justify-content-between align-items-center mb-2">
         <h5 class="card-title mb-3">Data Pegawai</h5>
         <div>
-            <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#modalGenerateAkun">
-                <i class="bx bx-user-plus"></i> Generate Akun
-            </button>
             <a href="{{ route('pegawai.create') }}" class="btn btn-primary">+ Tambah Data</a>
         </div>
     </div>
@@ -158,86 +155,7 @@
         @endif
     </div>
 </div>
-<div class="modal fade" id="modalGenerateAkun" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <form action="{{ route('pegawai.generateAkun') }}" method="POST">
-            @csrf
 
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Generate Akun Pegawai</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-
-                <div class="modal-body">
-                    {{-- Generate Semua --}}
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <strong>Pilih Pegawai</strong>
-
-                        <button type="submit"
-                                formaction="{{ route('pegawai.generateAkun') }}"
-                                class="btn btn-sm btn-outline-success"
-                                onclick="return confirm('Generate akun untuk semua pegawai yang belum punya akun?')">
-                            Generate Semua
-                        </button>
-                    </div>
-
-                    <table class="table table-sm table-bordered align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th width="40">
-                                    <input type="checkbox" id="checkAll">
-                                </th>
-                                <th>Nama</th>
-                                <th>NIP</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($pegawais as $pegawai)
-                                <tr>
-                                    @if($pegawai->user)
-                                        <td></td>
-                                        <td>{{ $pegawai->nama }}</td>
-                                        <td>{{ $pegawai->nip }}</td>
-                                        <td>
-                                            <span class="badge bg-success">Sudah Ada Akun</span>
-                                        </td>
-                                    @else
-                                        <td>
-                                            <input type="checkbox"
-                                                   name="pegawai_ids[]"
-                                                   value="{{ $pegawai->id }}"
-                                                   class="checkItem">
-                                        </td>
-                                        <td>{{ $pegawai->nama }}</td>
-                                        <td>{{ $pegawai->nip }}</td>
-                                        <td>
-                                            <span class="badge bg-danger">Belum Ada Akun</span>
-                                        </td>
-                                    @endif
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-
-                    <small class="text-muted">
-                        * Username = NIP, Password awal = NIP (wajib ganti password saat login pertama)
-                    </small>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        Batal
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        Generate Akun Terpilih
-                    </button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
 <script>
 document.getElementById('checkAll')?.addEventListener('change', function () {
     document.querySelectorAll('.checkItem').forEach(cb => {
