@@ -9,6 +9,8 @@ class Penghasilan extends Model
 {
     use HasFactory;
 
+    protected $table = 'penghasilans'; // WAJIB TAMBAH INI
+
     protected $fillable = [
         'pegawai_id',
         'tanggal',
@@ -23,7 +25,6 @@ class Penghasilan extends Model
         'pembulatan',
         'total_penghasilan',
     ];
-
 
     public function pegawai()
     {

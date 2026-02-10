@@ -19,6 +19,8 @@ use App\Http\Controllers\BarangController;
 use App\Http\Controllers\PenghasilanController;
 use App\Http\Controllers\PotonganController;
 use App\Http\Controllers\SlipGajiController;
+use App\Http\Controllers\ProfileController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -72,6 +74,14 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
     Route::resource('pegawai', PegawaiController::class);
     Route::post('pegawai/import', [PegawaiController::class, 'import'])
         ->name('pegawai.import');
+    Route::get('/ganti-password', [App\Http\Controllers\PasswordController::class, 'edit'])
+    ->name('password.edit');
+
+    Route::post('/ganti-password', [App\Http\Controllers\PasswordController::class, 'update'])
+    ->name('password.update');
+    Route::post('/profile/update-photo', [App\Http\Controllers\ProfileController::class, 'updatePhoto'])
+    ->name('profile.photo.update');
+
 
     // Kehadiran
     Route::resource('kehadiran', KehadiranController::class);
@@ -81,6 +91,10 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
     // Penghasilan & Potongan
     Route::resource('penghasilan', PenghasilanController::class);
     Route::resource('potongan', PotonganController::class);
+    Route::post('/dashboard/penghasilan/import',
+    [App\Http\Controllers\PenghasilanController::class,'import']
+)->name('penghasilan.import');
+
 
     // Pengajuan
     Route::resource('pengajuan', PengajuanController::class);

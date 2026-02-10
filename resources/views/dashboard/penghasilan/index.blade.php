@@ -2,39 +2,111 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item">Keuangan</li>
-    <li class="breadcrumb-item active text-primary fw-semibold">
+    <li class="breadcrumb-item active fw-semibold text-success">
         Penghasilan Pegawai
     </li>
 @endsection
 
 @section('content')
-<div class="card p-3">
+
+<style>
+/* =========================
+   GREEN PREMIUM – PENGHASILAN
+   ========================= */
+.card-green {
+    border-radius: 18px;
+    border: none;
+    box-shadow: 0 18px 40px rgba(16, 185, 129, 0.12);
+}
+
+.btn-green {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border: none;
+    color: #fff;
+    font-weight: 600;
+    border-radius: 12px;
+    padding: 10px 18px;
+    box-shadow: 0 8px 20px rgba(22, 163, 74, .35);
+}
+
+.btn-green:hover {
+    opacity: .9;
+    color: #fff;
+}
+
+.btn-soft-green {
+    background: #ecfdf5;
+    color: #166534;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.table thead th {
+    font-size: 12px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #166534;
+    background: #ecfdf5;
+    border-bottom: none;
+}
+
+.table tbody tr {
+    transition: all .2s ease;
+}
+
+.table tbody tr:hover {
+    background: #f0fdf4;
+}
+
+.total-green {
+    color: #16a34a;
+    font-weight: 700;
+}
+
+.filter-box input {
+    border-radius: 12px;
+}
+
+.action-icon {
+    color: #16a34a;
+}
+
+.action-icon:hover {
+    color: #15803d;
+}
+</style>
+
+<div class="card card-green p-4">
 
     {{-- HEADER --}}
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h5 class="mb-0 fw-bold">Penghasilan Pegawai</h5>
-            <small class="text-muted">Daftar penghasilan pegawai</small>
+            <h4 class="mb-1 fw-bold text-success">
+                Penghasilan Pegawai
+            </h4>
+            <small class="text-muted">
+                Daftar penghasilan pegawai per periode
+            </small>
         </div>
-        <a href="{{ route('penghasilan.create') }}" class="btn btn-primary">
+        <a href="{{ route('penghasilan.create') }}" class="btn btn-green">
             + Tambah Penghasilan
         </a>
     </div>
 
     {{-- FILTER BULAN --}}
-    <form method="GET" class="row g-2 mb-3">
+    <form method="GET" class="row g-2 mb-4 filter-box">
         <div class="col-md-3">
             <input type="month"
                    name="bulan"
                    class="form-control"
                    value="{{ request('bulan') }}">
         </div>
-        <div class="col-md-3">
-            <button class="btn btn-primary">
+        <div class="col-md-4">
+            <button class="btn btn-green me-1">
                 <i class="bx bx-filter-alt"></i> Filter
             </button>
             <a href="{{ route('penghasilan.index') }}"
-               class="btn btn-light ms-1">
+               class="btn btn-soft-green">
                 Reset
             </a>
         </div>
@@ -43,7 +115,7 @@
     {{-- TABLE --}}
     <div class="table-responsive">
         <table class="table table-hover align-middle">
-            <thead class="table-light">
+            <thead>
                 <tr>
                     <th>#</th>
                     <th>Pegawai</th>
@@ -57,7 +129,7 @@
                     <th class="text-end">Tunj. Beras</th>
                     <th class="text-end">Tunj. Pajak</th>
                     <th class="text-end">Pembulatan</th>
-                    <th class="text-end fw-semibold">Total</th>
+                    <th class="text-end">Total</th>
                     <th class="text-center">Aksi</th>
                 </tr>
             </thead>
@@ -69,8 +141,12 @@
 
                     {{-- PEGAWAI --}}
                     <td>
-                        <div class="fw-semibold">{{ $item->pegawai->nama ?? '-' }}</div>
-                        <small class="text-muted">{{ $item->pegawai->nip ?? '' }}</small>
+                        <div class="fw-semibold">
+                            {{ $item->pegawai->nama ?? '-' }}
+                        </div>
+                        <small class="text-muted">
+                            {{ $item->pegawai->nip ?? '' }}
+                        </small>
                     </td>
 
                     {{-- PERIODE --}}
@@ -94,14 +170,14 @@
                     <td class="text-end">{{ number_format($item->pembulatan, 0, ',', '.') }}</td>
 
                     {{-- TOTAL --}}
-                    <td class="text-end fw-semibold text-success">
+                    <td class="text-end total-green">
                         {{ number_format($item->total_penghasilan, 0, ',', '.') }}
                     </td>
 
                     {{-- AKSI --}}
                     <td class="text-center">
                         <a href="{{ route('penghasilan.edit', $item->id) }}"
-                           class="text-primary me-2"
+                           class="action-icon"
                            title="Edit">
                             <i class="bx bx-edit bx-sm"></i>
                         </a>
@@ -117,5 +193,6 @@
             </tbody>
         </table>
     </div>
+
 </div>
 @endsection

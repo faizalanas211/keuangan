@@ -7,7 +7,7 @@
 <style>
     @page {
         size: 21cm 14cm;
-        margin: 8mm 10mm;
+        margin: 8mm 10mm 0mm 10mm;
     }
 
     body {
@@ -63,22 +63,24 @@
 <!-- HEADER -->
 <table>
 <tr>
-    <td width="40%">
+    <td width="60%">
         <div class="bold">SLIP GAJI PEGAWAI</div>
         <div>{{ $periode->translatedFormat('F Y') }}</div>
         <br>
 
         <table>
-            <tr><td width="80">Nama</td><td width="10">:</td><td>{{ $pegawai->nama }}</td></tr>
+            <tr><td width="90">Nama</td><td width="10">:</td><td>{{ $pegawai->nama }}</td></tr>
             <tr><td>NIP</td><td>:</td><td>{{ $pegawai->nip }}</td></tr>
-            <tr><td>Jabatan</td><td>:</td><td>{{ $pegawai->jabatan }}</td></tr>
-            <tr><td>Pangkat/Gol.</td><td>:</td><td>{{ $pegawai->pangkat_golongan }}</td></tr>
+            <tr><td>Jabatan</td> <td>:</td> <td style="white-space:nowrap;">{{ $pegawai->jabatan }}</td></tr>
+            <tr><td>Pangkat/Gol.</td> <td>:</td> <td style="white-space:nowrap;">{{ $pegawai->pangkat_golongan }}
+    </td>
+</tr>
         </table>
     </td>
 
-    <td width="50%" class="right header-right">
+    <td width="40%" class="right header-right">
 
-        <img src="{{ public_path('logo/logo_satu.png') }}" style="height: 60px;">
+        <img src="{{ public_path('logo/logo_satu.png') }}" style="height: 50px;">
 </td>
 
 </tr>

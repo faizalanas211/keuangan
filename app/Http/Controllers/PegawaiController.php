@@ -4,22 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Imports\PegawaiImport;
 use App\Models\Pegawai;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
 use Maatwebsite\Excel\Facades\Excel;
 
 class PegawaiController extends Controller
 {
     public function index()
     {
-        // Ambil pegawai aktif dengan pagination
         $pegawais = Pegawai::where('status', 'aktif')
             ->orderBy('nama')
             ->paginate(20);
 
-        // Total pegawai aktif
         $totalPegawai = Pegawai::where('status', 'aktif')->count();
 
         return view('dashboard.pegawai.index', compact('pegawais', 'totalPegawai'));
@@ -32,34 +32,29 @@ class PegawaiController extends Controller
 
     public function store(Request $request)
     {
-        // Validasi input
         $request->validate([
             'nama' => 'required|string|max:255',
             'status' => 'required|in:aktif,nonaktif',
-            'nip' => 'required|string|unique:pegawai,nip',
+            'nip' => 'required|string|unique:pegawai,nip|unique:users,nip',
             'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
             'tempat_lahir' => 'nullable|string|max:255',
             'tanggal_lahir' => 'nullable|date',
             'jabatan' => 'required|string|max:255',
             'pangkat_golongan' => 'required|string|max:255',
-            'foto' => 'required|image|mimes:jpg,jpeg,png|max:10240', // max 10MB
+            'role' => 'required|in:pegawai,admin',
+            'foto' => 'required|image|mimes:jpg,jpeg,png|max:10240',
         ]);
 
         $fotoPath = null;
 
-        // Jika ada file foto
         if ($request->hasFile('foto')) {
             $file = $request->file('foto');
-
-            // Buat nama file: nip_nama.ext
             $namaFile = Str::slug($request->nip . '_' . $request->nama) . '.' . $file->getClientOriginalExtension();
-
-            // Simpan di folder storage/app/public/pegawai
             $fotoPath = $file->storeAs('pegawai', $namaFile, 'public');
         }
 
-        // Simpan data pegawai
-        Pegawai::create([
+        // SIMPAN PEGAWAI
+        $pegawai = Pegawai::create([
             'nama' => $request->nama,
             'status' => $request->status,
             'nip' => $request->nip,
@@ -71,18 +66,29 @@ class PegawaiController extends Controller
             'foto' => $fotoPath,
         ]);
 
-        return redirect()->route('pegawai.index')->with('success', 'Data pegawai berhasil disimpan!');
+        // BUAT AKUN LOGIN OTOMATIS
+        User::create([
+            'name' => $pegawai->nama,
+            'email' => $pegawai->nip . '@pegawai.local',
+            'nip' => $pegawai->nip,
+            'pegawai_id' => $pegawai->id,
+            'role' => $request->role, // <-- sesuai pilihan admin / pegawai
+            'password' => Hash::make('12345678'),
+        ]);
+
+        return redirect()->route('pegawai.index')
+            ->with('success', 'Data pegawai dan akun login berhasil dibuat!');
     }
 
     public function show(Pegawai $pegawai) {}
-    public function edit(Pegawai $pegawai) {
+
+    public function edit(Pegawai $pegawai)
+    {
         return view('dashboard.pegawai.edit', compact('pegawai'));
     }
 
     public function update(Request $request, Pegawai $pegawai)
     {
-
-        // Validasi input
         $validated = $request->validate([
             'nama'             => 'required|string|max:255',
             'status'           => 'required|in:aktif,nonaktif',
@@ -95,29 +101,20 @@ class PegawaiController extends Controller
             'foto'             => 'nullable|image|mimes:jpg,jpeg,png|max:10240',
         ]);
 
-        // Jika upload foto baru
         if ($request->hasFile('foto')) {
 
-            // Hapus foto lama jika ada
             if ($pegawai->foto && Storage::disk('public')->exists($pegawai->foto)) {
                 Storage::disk('public')->delete($pegawai->foto);
             }
 
-            // Upload foto baru
             $file = $request->file('foto');
-
             $filename = uniqid() . '-' . time() . '.' . $file->getClientOriginalExtension();
-
             $path = $file->storeAs('pegawai', $filename, 'public');
-
-            // Set data foto baru
             $validated['foto'] = $path;
         }
 
-        // Update data pegawai
         $pegawai->update($validated);
 
-        // Ambil page dari request
         $page = $request->input('page', 1);
 
         return redirect()->route('pegawai.index', ['page' => $page])
@@ -126,15 +123,15 @@ class PegawaiController extends Controller
 
     public function destroy(Pegawai $pegawai)
     {
-        // Hapus foto jika ada
         if ($pegawai->foto && Storage::disk('public')->exists($pegawai->foto)) {
             Storage::disk('public')->delete($pegawai->foto);
         }
 
-        // Hapus data dari database
+        // Hapus user terkait
+        User::where('pegawai_id', $pegawai->id)->delete();
+
         $pegawai->delete();
 
-        // Redirect dengan pesan sukses
         return redirect()
             ->route('pegawai.index')
             ->with('success', 'Data pegawai berhasil dihapus.');

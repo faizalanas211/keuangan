@@ -6,6 +6,9 @@ use App\Models\Penghasilan;
 use App\Models\Pegawai;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\PenghasilanImport;
+
 
 class PenghasilanController extends Controller
 {
@@ -126,6 +129,19 @@ class PenghasilanController extends Controller
             ->route('penghasilan.index')
             ->with('success', 'Data penghasilan berhasil diperbarui.');
     }
+
+    public function import(Request $request)
+{
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls'
+    ]);
+
+    Excel::import(new PenghasilanImport, $request->file('file'));
+
+    return redirect()->route('penghasilan.index')
+        ->with('success','Data penghasilan berhasil diimport');
+}
+
 
     /**
      * Remove the specified resource from storage.

@@ -2,21 +2,99 @@
 
 @section('breadcrumb')
 <li class="breadcrumb-item">Keuangan</li>
-<li class="breadcrumb-item active text-primary fw-semibold">
+<li class="breadcrumb-item active fw-semibold text-success">
     Cetak Slip Gaji
 </li>
 @endsection
 
 @section('content')
-<div class="card p-3">
+
+<style>
+/* =========================
+   GREEN PREMIUM – SLIP GAJI
+   ========================= */
+.card-green {
+    border-radius: 18px;
+    border: none;
+    box-shadow: 0 18px 40px rgba(16, 185, 129, 0.12);
+}
+
+.btn-green {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border: none;
+    color: #fff;
+    font-weight: 600;
+    border-radius: 12px;
+    padding: 10px 18px;
+    box-shadow: 0 8px 20px rgba(22, 163, 74, .35);
+}
+
+.btn-green:hover {
+    opacity: .9;
+    color: #fff;
+}
+
+.btn-outline-green {
+    border: 1px solid #22c55e;
+    color: #166534;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.btn-outline-green:hover {
+    background: #22c55e;
+    color: #fff;
+}
+
+.table thead th {
+    font-size: 12px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #166534;
+    background: #ecfdf5;
+    border-bottom: none;
+}
+
+.table tbody tr {
+    transition: all .2s ease;
+}
+
+.table tbody tr:hover {
+    background: #f0fdf4;
+}
+
+.filter-box select,
+.filter-box input {
+    border-radius: 12px;
+}
+
+.total-bersih {
+    color: #15803d;
+    font-weight: 700;
+}
+</style>
+
+<div class="card card-green p-4">
+
+    {{-- HEADER --}}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1 fw-bold text-success">
+                Slip Gaji Pegawai
+            </h4>
+            <small class="text-muted">
+                Cetak slip gaji berdasarkan pegawai dan periode
+            </small>
+        </div>
+    </div>
 
     {{-- FILTER --}}
-    <form method="GET" class="row g-2 mb-4">
+    <form method="GET" class="row g-2 mb-4 filter-box">
+
         <div class="col-md-4">
             <select name="pegawai_id" class="form-select">
                 <option value="">-- Pilih Pegawai --</option>
 
-                {{-- ✅ FIX: pakai $pegawais --}}
                 @foreach ($pegawais as $p)
                     <option value="{{ $p->id }}"
                         {{ request('pegawai_id') == $p->id ? 'selected' : '' }}>
@@ -34,16 +112,17 @@
         </div>
 
         <div class="col-md-3">
-            <button class="btn btn-primary">
+            <button class="btn btn-green">
                 <i class="bx bx-search"></i> Tampilkan
             </button>
         </div>
+
     </form>
 
-    {{-- TABEL --}}
+    {{-- TABLE --}}
     <div class="table-responsive">
         <table class="table table-hover align-middle">
-            <thead class="table-light">
+            <thead>
                 <tr>
                     <th>#</th>
                     <th>Pegawai</th>
@@ -53,14 +132,16 @@
                     <th class="text-center">Cetak</th>
                 </tr>
             </thead>
-            <tbody>
 
+            <tbody>
                 @forelse ($results as $i => $row)
                 <tr>
                     <td>{{ $i + 1 }}</td>
 
                     <td>
-                        <strong>{{ $row['pegawai']->nama }}</strong><br>
+                        <div class="fw-semibold">
+                            {{ $row['pegawai']->nama }}
+                        </div>
                         <small class="text-muted">
                             {{ $row['pegawai']->nip }}
                         </small>
@@ -68,7 +149,7 @@
 
                     <td>{{ $row['periode'] }}</td>
 
-                    <td class="text-end fw-semibold">
+                    <td class="text-end total-bersih">
                         Rp {{ number_format($row['bersih'], 0, ',', '.') }}
                     </td>
 
@@ -78,12 +159,13 @@
 
                     <td class="text-center">
                         <a href="{{ route('slip-gaji.cetak', [$row['pegawai']->id, $row['bulan']]) }}"
-                           class="btn btn-sm btn-outline-primary"
-                           title="Cetak Slip">
+                           class="btn btn-sm btn-outline-green"
+                           title="Cetak Slip Gaji">
                             <i class="bx bx-printer"></i>
                         </a>
                     </td>
                 </tr>
+
                 @empty
                 <tr>
                     <td colspan="6" class="text-center text-muted py-4">
@@ -91,9 +173,10 @@
                     </td>
                 </tr>
                 @endforelse
-
             </tbody>
+
         </table>
     </div>
+
 </div>
 @endsection
