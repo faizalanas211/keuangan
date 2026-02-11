@@ -44,44 +44,12 @@
     <script src="{{ asset('admin') }}/js/config.js"></script>
 </head>
 
-<body>
-    <!-- Content -->
+<body style="min-height:100vh;">
 
-    <div class="container-xxl">
-        <div class="authentication-wrapper authentication-basic container-p-y">
-            <div class="authentication-inner">
-                <!-- Register -->
-                <div class="card">
-                    <div class="card-body">
-                        @yield('content')
-                    </div>
-                </div>
-                <!-- /Register -->
-            </div>
-        </div>
+    <div class="auth-fullscreen">
+        @yield('content')
     </div>
 
-    <!-- / Content -->
-
-    <!-- Core JS -->
-    <!-- build:js assets/vendor/js/core.js -->
-    <script src="{{ asset('admin') }}/vendor/libs/jquery/jquery.js"></script>
-    <script src="{{ asset('admin') }}/vendor/libs/popper/popper.js"></script>
-    <script src="{{ asset('admin') }}/vendor/js/bootstrap.js"></script>
-    <script src="{{ asset('admin') }}/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
-
-    <script src="{{ asset('admin') }}/vendor/js/menu.js"></script>
-    <!-- endbuild -->
-
-    <!-- Vendors JS -->
-
-    <!-- Main JS -->
-    <script src="{{ asset('admin') }}/js/main.js"></script>
-
-    <!-- Page JS -->
-
-    <!-- Place this tag in your head or just before your close body tag. -->
-    <script async defer src="https://buttons.github.io/buttons.js"></script>
 </body>
 
 </html>
