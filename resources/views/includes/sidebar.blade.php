@@ -88,7 +88,7 @@
 @if(Auth::user()->role==='admin')
 
 <li class="menu-header small text-uppercase">
-<span class="menu-header-text">Keuangan</span>
+<span class="menu-header-text">Gaji</span>
 </li>
 
 <li class="menu-item {{ Request::is('dashboard/penghasilan*')?'active':'' }}">
@@ -107,6 +107,16 @@
 <a href="{{ route('slip-gaji.index') }}" class="menu-link">
 <i class="menu-icon bx bx-printer"></i><div>Slip Gaji</div>
 </a>
+</li>
+
+<li class="menu-header small text-uppercase">
+<span class="menu-header-text">Biaya Perjadin</span>
+</li>
+
+<li class="menu-item {{ Request::is('dashboard/perjadin*')?'active':'' }}">
+    <a href="{{ route('perjadin.index') }}" class="menu-link">
+        <i class="menu-icon bx bx-plus-circle"></i><div>Perjadin</div>
+    </a>
 </li>
 
 <li class="menu-header small text-uppercase">

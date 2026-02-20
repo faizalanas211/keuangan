@@ -1,5 +1,6 @@
 <?php
 
+use App\Exports\NominatifPerjalananExport;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -17,10 +18,12 @@ use App\Http\Controllers\PenilaianController;
 use App\Http\Controllers\PeminjamanController;
 use App\Http\Controllers\BarangController;
 use App\Http\Controllers\PenghasilanController;
+use App\Http\Controllers\PerjadinController;
 use App\Http\Controllers\PotonganController;
 use App\Http\Controllers\SlipGajiController;
 use App\Http\Controllers\ProfileController;
-
+use App\Models\PerjalananDinas;
+use Maatwebsite\Excel\Excel;
 
 /*
 |--------------------------------------------------------------------------
@@ -97,8 +100,14 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
     Route::resource('penghasilan', PenghasilanController::class);
     Route::resource('potongan', PotonganController::class);
     Route::post('/dashboard/penghasilan/import',
-    [App\Http\Controllers\PenghasilanController::class,'import']
-)->name('penghasilan.import');
+        [App\Http\Controllers\PenghasilanController::class,'import']
+    )->name('penghasilan.import');
+
+    // Perjadin
+    Route::resource('perjadin', PerjadinController::class);
+    Route::get('perjadin/{id}/export-nominatif',
+        [PerjadinController::class, 'exportNominatif']
+    )->name('perjadin.export.nominatif');
 
 
     // Pengajuan

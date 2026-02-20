@@ -30,4 +30,10 @@ class Pegawai extends Model
         return $this->hasMany(Kehadiran::class, 'pegawai_id');
     }
 
+    public function perjalananDinas()
+    {
+        return $this->belongsToMany(PerjalananDinas::class, 'perjalanan_dinas_pegawai')
+                    ->withTimestamps();
+    }
+
 }
