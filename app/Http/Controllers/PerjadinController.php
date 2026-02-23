@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Exports\NominatifPerjalananExport;
+use App\Exports\SbyPenyimpanExport;
 use App\Models\JenisBiaya;
 use App\Models\Pegawai;
 use App\Models\PerjalananDinas;
 use App\Models\PerjalananDinasPegawai;
 use App\Models\RincianBiaya;
 use App\Models\SuratPerjalanan;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -229,4 +231,32 @@ class PerjadinController extends Controller
             'Nominatif_Perjalanan.xlsx'
         );
     }
+
+    public function exportSbyPenyimpan($id)
+{
+    $perjalanan = PerjalananDinas::findOrFail($id);
+
+    $tanggal = Carbon::parse($perjalanan->tanggal_mulai);
+
+    $grandTotalPerjalanan = 0;
+
+    foreach ($perjalanan->pegawaiPerjalanan as $pp) {
+        $grandTotalPerjalanan += $pp->rincian->sum('total');
+    }
+
+    return Excel::download(
+        new SbyPenyimpanExport([
+            'tanggal' => $tanggal,
+            'nomor' => '                  /BBPJT/'.$tanggal->format('m').'/'.$tanggal->format('Y'),
+            'nominal_angka' => (float) $grandTotalPerjalanan,
+            'kepada' => 'Pegawai BBPJT',
+            'uraian' => 'Belanja Perjalanan Dinas untuk melaksanakan kegiatan '
+                        .$perjalanan->nama_kegiatan.
+                        ' pada '.$tanggal->translatedFormat('d F Y').
+                        ' bertempat di '.$perjalanan->tujuan_kota,
+            'mak' => 'WA.7613.EBA.962.054.A.524111'
+        ]),
+        'SBY-Penyimpan-'.$perjalanan->id.'.xlsx'
+    );
+}
 }

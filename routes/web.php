@@ -108,6 +108,10 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
     Route::get('perjadin/{id}/export-nominatif',
         [PerjadinController::class, 'exportNominatif']
     )->name('perjadin.export.nominatif');
+    Route::get('perjadin/{id}/export-sby-penyimpan',
+        [PerjadinController::class, 'exportSbyPenyimpan']
+    )->name('perjadin.export.sby');
+
 
 
     // Pengajuan

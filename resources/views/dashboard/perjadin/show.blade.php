@@ -26,7 +26,10 @@
    class="btn btn-success">
    Export Nominatif
 </a>
-
+<a href="{{ route('perjadin.export.sby',$perjalanan->id) }}"
+   class="btn btn-success">
+   Export Sby Penyimpan
+</a>
 
 {{-- ================= INFORMASI ================= --}}
 <div class="card card-shadow mb-4">
