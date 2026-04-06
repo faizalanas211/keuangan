@@ -129,6 +129,12 @@
                     <div>Data Pegawai</div>
                 </a>
             </li>
+            <li class="menu-item {{ Request::is('dashboard/pejabat*') ? 'active' : '' }}">
+                <a href="{{ route('pejabat.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-user"></i>
+                    <div>Data Pejabat</div>
+                </a>
+            </li>
 
 
 

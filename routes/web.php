@@ -17,6 +17,7 @@ use App\Http\Controllers\FingerprintController;
 use App\Http\Controllers\PenilaianController;
 use App\Http\Controllers\PeminjamanController;
 use App\Http\Controllers\BarangController;
+use App\Http\Controllers\PejabatController;
 use App\Http\Controllers\PenghasilanController;
 use App\Http\Controllers\PerjadinController;
 use App\Http\Controllers\PotonganController;
@@ -90,6 +91,8 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
     Route::post('/pegawai/generate-akun-semua', [PegawaiController::class, 'generateAkunSemua'])
         ->name('pegawai.generateAkunSemua');
 
+    // Pejabat
+    Route::resource('pejabat', PejabatController::class);
 
     // Kehadiran
     Route::resource('kehadiran', KehadiranController::class);
@@ -108,9 +111,14 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
     Route::get('perjadin/{id}/export-nominatif',
         [PerjadinController::class, 'exportNominatif']
     )->name('perjadin.export.nominatif');
-    Route::get('perjadin/{id}/export-sby-penyimpan',
-        [PerjadinController::class, 'exportSbyPenyimpan']
-    )->name('perjadin.export.sby');
+    // Route::get('perjadin/{id}/export-sby-penyimpan/{pp}',
+    //     [PerjadinController::class, 'exportSbyPenyimpan']
+    // )->name('perjadin.export.sby');
+    Route::get('perjadin/export/sby/{pp}', [PerjadinController::class, 'exportSbyPenyimpan'])
+    ->name('perjadin.export.sby');
+    Route::get('/perjadin/kuitansi/{pegawaiPerjalanan}',
+        [PerjadinController::class, 'exportKuitansi']
+    )->name('perjadin.export.kuitansi');
 
 
 

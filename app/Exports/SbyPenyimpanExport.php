@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Models\PejabatPeriode;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithCustomStartCell;
@@ -32,9 +33,15 @@ class SbyPenyimpanExport implements WithEvents, WithCustomStartCell
 
                 $sheet = $event->sheet->getDelegate();
 
-                $tanggal = Carbon::parse($this->data['tanggal'])->translatedFormat('d F Y');
                 $nominalAngka = $this->data['nominal_angka'];
                 $nominalFormat = 'Rp' . number_format($nominalAngka, 0, ',', '.');
+
+                $tanggalRaw = $this->data['tanggal']; // format asli (Y-m-d)
+                $tanggal = Carbon::parse($tanggalRaw)->translatedFormat('d F Y');
+
+                // ambil pejabat
+                $ppk = PejabatPeriode::getByTanggal('Pejabat Pembuat Komitmen', $tanggalRaw);
+                $bendahara = PejabatPeriode::getByTanggal('Bendahara Pengeluaran', $tanggalRaw);
 
                 /* ================= HEADER ================= */
 
@@ -148,15 +155,22 @@ class SbyPenyimpanExport implements WithEvents, WithCustomStartCell
                 $sheet->mergeCells('E29:G29');
                 $sheet->mergeCells('H29:I29');
 
-                $sheet->setCellValue('B29', 'Danang Eko Prasetyo');
-                $sheet->setCellValue('E29', 'Andy Rahmadi Santoso, S.Kom.');
-                $sheet->setCellValue('H29', 'Ngatirah, M.Si.');
+                // ===== NAMA =====
+                if ($bendahara) {
+                    $sheet->setCellValue('B29', $bendahara->pegawai->nama);
+                    $sheet->setCellValue('B30', 'NIP '.$bendahara->pegawai->nip);
+                }
+
+                if ($ppk) {
+                    $sheet->setCellValue('H29', $ppk->pegawai->nama);
+                    $sheet->setCellValue('H30', 'NIP '.$ppk->pegawai->nip);
+                }
+
+                // kalau mau tetap ada penerima (E kolom)
+                $sheet->setCellValue('E29', $this->data['kepada']);
 
                 $sheet->mergeCells('B30:D30');
                 $sheet->mergeCells('H30:I30');
-
-                $sheet->setCellValue('B30', 'NIP 198001132009101002');
-                $sheet->setCellValue('H30', 'NIP 197903132006042002');
 
                 // Border atas bawah TTD
                 $sheet->getStyle('A23:I30')->getBorders()->getTop()
