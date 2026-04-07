@@ -77,10 +77,10 @@
         <label>Tanggal Terima</label>
         <input type="date" id="tanggal_terima" name="tanggal_terima" class="form-control"
         value="{{ old('tanggal_terima',
-    $perjalanan->tanggal_terima 
-        ? \Carbon\Carbon::parse($perjalanan->tanggal_terima)->format('Y-m-d') 
-        : ''
-) }}">
+                $perjalanan->tanggal_terima 
+                    ? \Carbon\Carbon::parse($perjalanan->tanggal_terima)->format('Y-m-d') 
+                    : ''
+            ) }}">
     </div>
     <div class="col-md-6">
         <label>Kode MAK</label>

@@ -23,6 +23,7 @@ use App\Http\Controllers\PerjadinController;
 use App\Http\Controllers\PotonganController;
 use App\Http\Controllers\SlipGajiController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TemplateController;
 use App\Models\PerjalananDinas;
 use Maatwebsite\Excel\Excel;
 
@@ -120,7 +121,11 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
         [PerjadinController::class, 'exportKuitansi']
     )->name('perjadin.export.kuitansi');
 
-
+    // Pengaturan Template
+    Route::resource('template', TemplateController::class);
+    Route::get('/dashboard/templates/{id}/preview', 
+    [TemplateController::class, 'preview'])
+    ->name('template.preview');
 
     // Pengajuan
     Route::resource('pengajuan', PengajuanController::class);

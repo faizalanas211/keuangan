@@ -45,10 +45,14 @@
 
         <div class="row mb-2">
             <div class="col-md-6">
-                <strong>Tanggal:</strong>
+                <strong>Tanggal Pelaksanaan:</strong>
                 {{ \Carbon\Carbon::parse($perjalanan->tanggal_mulai)->format('d-m-Y') }}
                 s/d
                 {{ \Carbon\Carbon::parse($perjalanan->tanggal_akhir)->format('d-m-Y') }}
+            </div>
+            <div class="col-md-6">
+                <strong>Tanggal Terima:</strong>
+                {{ \Carbon\Carbon::parse($perjalanan->tanggal_terima)->format('d-m-Y') }}
             </div>
         </div>
 
@@ -118,7 +122,7 @@
 
             <a href="{{ route('perjadin.export.kuitansi', $pp->id) }}"
                class="btn btn-sm btn-success mb-3">
-               Export Kuitansi
+               Export Kuitansi dan SPD
             </a>
             <a href="{{ route('perjadin.export.sby', $pp->id) }}"
             class="btn btn-sm btn-primary mb-3">

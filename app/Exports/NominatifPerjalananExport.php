@@ -367,7 +367,7 @@ $sheet->getStyle("A3:{$lastCol}{$totalRow}")
         // ===== Bendahara =====
         $sheet->setCellValue(
             "H$footer",
-            "Kab. Semarang, ".$this->perjalanan->tanggal_mulai->translatedFormat('d F Y')
+            "Kab. Semarang, ".$this->perjalanan->tanggal_terima->translatedFormat('d F Y')
         );
         $sheet->setCellValue("H".($footer+1), "Bendahara,");
 

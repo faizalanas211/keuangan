@@ -136,6 +136,17 @@
                 </a>
             </li>
 
+            <li class="menu-header small text-uppercase">
+                <span class="menu-header-text">Pengaturan</span>
+            </li>
+
+            <li class="menu-item {{ Request::is('dashboard/pengaturan*') ? 'active' : '' }}">
+                <a href="{{ route('template.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-user"></i>
+                    <div>Template Dokumen</div>
+                </a>
+            </li>
+            
 
 
 @endif

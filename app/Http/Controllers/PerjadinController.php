@@ -6,10 +6,12 @@ use App\Exports\NominatifPerjalananExport;
 use App\Exports\SbyPenyimpanExport;
 use App\Models\JenisBiaya;
 use App\Models\Pegawai;
+use App\Models\PejabatPeriode;
 use App\Models\PerjalananDinas;
 use App\Models\PerjalananDinasPegawai;
 use App\Models\RincianBiaya;
 use App\Models\SuratPerjalanan;
+use App\Models\Template;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -299,103 +301,131 @@ class PerjadinController extends Controller
     }
 
     public function exportKuitansi($id)
-    {
-        $pp = PerjalananDinasPegawai::with([
-                    'pegawai',
-                    'perjalananDinas',
-                    'rincian.jenisBiaya'
-                ])->findOrFail($id);
+{
+    $pp = PerjalananDinasPegawai::with([
+        'pegawai',
+        'perjalananDinas.surat',
+        'rincian.jenisBiaya'
+    ])->findOrFail($id);
 
-        $perjalanan = $pp->perjalananDinas;
-        $pegawai    = $pp->pegawai;
+    $perjalanan = $pp->perjalananDinas;
+    $pegawai    = $pp->pegawai;
 
-        // ===============================
-        // FILTER RINCIAN
-        // ===============================
+    $tanggal = $perjalanan->tanggal_mulai;
+    $tanggalMulai = Carbon::parse($perjalanan->tanggal_mulai);
+    $tanggalAkhir = Carbon::parse($perjalanan->tanggal_akhir);
 
-        $transportRincian = $pp->rincian->first(function ($r) {
-            return str_contains(strtolower($r->jenisBiaya->nama_biaya), 'transport');
-        });
+    // lama perjalanan (hari)
+    $lamaPerjalanan = $tanggalMulai->diffInDays($tanggalAkhir) + 1;
 
-        $harianRincian = $pp->rincian->first(function ($r) {
-            return str_contains(strtolower($r->jenisBiaya->nama_biaya), 'harian perjalanan dinas');
-        });
+    $bendahara = PejabatPeriode::getByTanggal('Bendahara Pengeluaran', $tanggal);
+    $ppk       = PejabatPeriode::getByTanggal('Pejabat Pembuat Komitmen', $tanggal);
 
-        $transport = $transportRincian->total ?? 0;
-        $harian    = $harianRincian->total ?? 0;
+    $rincian = $pp->rincian;
+    $sumTotal = $rincian->sum('total');
 
-        $sumTotal  = $pp->rincian->sum('total');
+    // ===============================
+    // LOAD TEMPLATE
+    // ===============================
+    $templateFile = Template::where('jenis', 'kuitansi_spd')
+                    ->latest()
+                    ->first();
 
-        // ===============================
-        // LOAD TEMPLATE
-        // ===============================
+    $template = new TemplateProcessor(
+                    storage_path('app/public/' . $templateFile->file_path)
+                );
 
-        $template = new TemplateProcessor(
-            storage_path('app/templates/template_kuitansi.docx')
-        );
+    // ===============================
+    // SET DATA UMUM
+    // ===============================
+    $data = [
+        'tahun_anggaran'   => $perjalanan->tahun_anggaran ?? date('Y'),
+        'beban_mak'        => $perjalanan->kode_mak ?? '-',
+        'tanggal_terima'=> $perjalanan->surat->tanggal_terima,
 
-        // ===============================
-        // SET DATA KE TEMPLATE
-        // ===============================
+        'jumlah_rupiah' => 'Rp' . number_format($sumTotal, 0, ',', '.'),
+        'terbilang'     => $this->terbilang($sumTotal),
+        'keperluan'     => $perjalanan->nama_kegiatan ?? '-',
+        'nomor_spd'     => $perjalanan->surat->nomor_st ?? '-',
+        'tanggal_spd'   => $perjalanan->surat->tanggal_st
+            ? Carbon::parse($perjalanan->surat->tanggal_st)->translatedFormat('d F Y')
+            : '-',
+        'tujuan'        => $perjalanan->tujuan_kota ?? '-',
 
-        $data = [
+        // PERJALANAN
+        'nama_kegiatan'   => $perjalanan->nama_kegiatan ?? '-',
+        'alat_angkutan'   => $perjalanan->alat_angkutan ?? '-',
+        'dari_kota'       => $perjalanan->dari_kota ?? '-',
+        'tujuan_kota'     => $perjalanan->tujuan_kota ?? '-',
+        'tingkat_perjalanan' => $perjalanan->tingkat_perjalanan ?? '-',
 
-            // HEADER
-            'tahun_anggaran' => $perjalanan->tahun_anggaran ?? date('Y'),
-            'beban_mak'      => $perjalanan->kode_mak ?? '-',
+        // TANGGAL
+        'tanggal_mulai' => $tanggalMulai->translatedFormat('d F Y'),
+        'tanggal_akhir' => $tanggalAkhir->translatedFormat('d F Y'),
+        'lama_perjalanan' => $lamaPerjalanan . ' hari',
 
-            // TANGGAL HARI INI
-            'tanggal_hari_ini' => Carbon::now()->translatedFormat('d F Y'),
+        // TANGGAL TERIMA 
+        'tanggal_terima' => $perjalanan->tanggal_terima
+                        ? Carbon::parse($perjalanan->tanggal_terima)->translatedFormat('d F Y')
+                        : '-',
 
-            // KUITANSI
-            'jumlah_rupiah'  => 'Rp' . number_format($sumTotal, 0, ',', '.'),
-            'terbilang'      => $this->terbilang($sumTotal),
-            'keperluan'      => $perjalanan->nama_kegiatan ?? '-',
-            'nomor_spd'      => $perjalanan->surat->nomor_st ?? '-',
-            'tanggal_spd'    => $perjalanan->surat->tanggal_st
-                                ? Carbon::parse($perjalanan->surat->tanggal_st)
-                                    ->translatedFormat('d F Y')
-                                : '-',
-            'tujuan'         => $perjalanan->tujuan_kota ?? '-',
+        // Penerima
+        'nama_penerima' => $pegawai->nama,
+        'nip_penerima'  => $pegawai->nip,
+        'pangkat_golongan_penerima' => $pegawai->pangkat_golongan ?? '-',
+        'jabatan_penerima' => $pegawai->jabatan ?? '-',
 
-            // PEGAWAI
-            'nama_penerima'  => $pegawai->nama,
-            'nip_penerima'   => $pegawai->nip,
+        // Bendahara
+        'nama_bendahara' => $bendahara?->pegawai?->nama ?? '-',
+        'nip_bendahara'  => $bendahara?->pegawai?->nip ?? '-',
 
-            // RINCIAN TRANSPORT
-            'asal'               => $perjalanan->dari_kota ?? '-',
-            'volume_transport'   => $transportRincian->volume ?? 1,
-            'satuan_transport'   => $transportRincian->satuan ?? 'kl',
-            'tarif_transport'    => number_format($transportRincian->tarif ?? 0, 0, ',', '.'),
-            'total_transport'    => number_format($transport, 0, ',', '.'),
+        // PPK
+        'nama_ppk'       => $ppk?->pegawai?->nama ?? '-',
+        'nip_ppk'        => $ppk?->pegawai?->nip ?? '-',
 
-            // RINCIAN HARIAN
-            'volume_harian'      => $harianRincian->volume ?? 1,
-            'satuan_harian'      => $harianRincian->satuan ?? 'hr',
-            'tarif_harian'       => number_format($harianRincian->tarif ?? 0, 0, ',', '.'),
-            'total_harian'       => number_format($harian, 0, ',', '.'),
+        'sum_total'     => number_format($sumTotal, 0, ',', '.'),
+    ];
 
-            // TOTAL
-            'sum_total'          => number_format($sumTotal, 0, ',', '.'),
-        ];
+    foreach ($data as $key => $value) {
+        $template->setValue($key, $value ?? '-');
+    }
 
-        foreach ($data as $key => $value) {
-            $template->setValue($key, $value ?? '-');
+    // ===============================
+    // RINCIAN DINAMIS 
+    // ===============================
+    $template->cloneRow('no', $rincian->count());
+
+    foreach ($rincian as $i => $r) {
+
+        $index = $i + 1;
+
+        $uraian = $r->uraian ?: $r->jenisBiaya->nama_biaya;
+
+        $volume = (int) $r->volume;
+
+        if ($r->volume && $r->tarif) {
+            $uraian .= " : {$volume} {$r->satuan} x Rp"
+         . number_format($r->tarif, 0, ',', '.');
         }
 
-        // ===============================
-        // GENERATE FILE
-        // ===============================
-
-        $fileName = 'Kuitansi_' . str_replace('/', '-', $perjalanan->surat->nomor_st ?? 'SPD') 
-                    . '_' . $pegawai->nama . '.docx';
-
-        $savePath = storage_path($fileName);
-
-        $template->saveAs($savePath);
-
-        return response()->download($savePath)->deleteFileAfterSend(true);
+        $template->setValue("no#{$index}", $index);
+        $template->setValue("uraian#{$index}", $uraian);
+        $template->setValue("jumlah#{$index}", 'Rp' . number_format($r->total, 0, ',', '.'));
+        $template->setValue("keterangan#{$index}", '-');
     }
+
+    // ===============================
+    // GENERATE FILE
+    // ===============================
+    $fileName = 'Kuitansi_' . str_replace('/', '-', $perjalanan->surat->nomor_st ?? 'SPD') 
+                . '_' . $pegawai->nama . '.docx';
+
+    $savePath = storage_path($fileName);
+
+    $template->saveAs($savePath);
+
+    return response()->download($savePath)->deleteFileAfterSend(true);
+}
 
     private function terbilang($angka)
     {
