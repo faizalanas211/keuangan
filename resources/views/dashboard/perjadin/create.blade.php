@@ -21,6 +21,12 @@
     font-weight: 600;
     color: #16a34a;
 }
+.peserta-card {
+    transition: all 0.2s;
+}
+.peserta-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
 </style>
 
 <form action="{{ route('perjadin.store') }}" method="POST">
@@ -29,9 +35,8 @@
 {{-- ================= INFORMASI ================= --}}
 <div class="card card-shadow mb-4">
     <div class="card-body">
-
         <h5 class="section-title mb-3">Informasi Perjalanan</h5>
-
+        
         <div class="row mb-3">
             <div class="col-md-6">
                 <label>Tingkat Perjalanan</label>
@@ -39,36 +44,36 @@
             </div>
             <div class="col-md-6">
                 <label>Alat Angkutan <span class="text-danger">*</span></label>
-                <input type="text" name="alat_angkutan" class="form-control">
+                <input type="text" name="alat_angkutan" class="form-control" required>
             </div>
         </div>
 
         <div class="row mb-3">
             <div class="col-md-6">
                 <label>Dari Kota <span class="text-danger">*</span></label>
-                <input type="text" name="dari_kota" class="form-control">
+                <input type="text" name="dari_kota" class="form-control" required>
             </div>
             <div class="col-md-6">
                 <label>Tujuan Kota <span class="text-danger">*</span></label>
-                <input type="text" name="tujuan_kota" class="form-control">
+                <input type="text" name="tujuan_kota" class="form-control" required>
             </div>
         </div>
 
         <div class="row mb-3">
             <div class="col-md-6">
                 <label>Tanggal Mulai <span class="text-danger">*</span></label>
-                <input type="date" id="tanggal_mulai" name="tanggal_mulai" class="form-control">
+                <input type="date" id="tanggal_mulai" name="tanggal_mulai" class="form-control" required>
             </div>
             <div class="col-md-6">
                 <label>Tanggal Akhir <span class="text-danger">*</span></label>
-                <input type="date" id="tanggal_akhir" name="tanggal_akhir" class="form-control">
+                <input type="date" id="tanggal_akhir" name="tanggal_akhir" class="form-control" required>
             </div>
         </div>
 
         <div class="row mb-3">
             <div class="col-md-6">
                 <label>Tanggal Terima <span class="text-danger">*</span></label>
-                <input type="date" id="tanggal_terima" name="tanggal_terima" class="form-control">
+                <input type="date" id="tanggal_terima" name="tanggal_terima" class="form-control" required>
             </div>
             <div class="col-md-6">
                 <label>Kode MAK</label>
@@ -83,81 +88,57 @@
 
         <div class="mb-3">
             <label>Nama Kegiatan <span class="text-danger">*</span></label>
-            <textarea name="nama_kegiatan" class="form-control" rows="3"></textarea>
+            <textarea name="nama_kegiatan" class="form-control" rows="3" required></textarea>
         </div>
-
     </div>
 </div>
 
 {{-- ================= SURAT PERJALANAN ================= --}}
 <div class="card card-shadow mb-4">
     <div class="card-body">
-
         <h5 class="section-title mb-3">Surat Perjalanan</h5>
 
         <div class="row mb-3">
             <div class="col-md-6">
                 <label>Tanggal ST <span class="text-danger">*</span></label>
-                <input type="date" 
-                    name="tanggal_st" 
-                    class="form-control">
+                <input type="date" name="tanggal_st" class="form-control" required>
             </div>
-
             <div class="col-md-6">
                 <label>Nomor ST <span class="text-danger">*</span></label>
-                <input type="text" 
-                       name="nomor_st" 
-                       class="form-control">
+                <input type="text" name="nomor_st" class="form-control" required>
             </div>
         </div>
 
         <div class="mb-3">
             <label>Nomor SK</label>
-            <input type="text" 
-                    name="nomor_sk" 
-                    class="form-control">
+            <input type="text" name="nomor_sk" class="form-control">
         </div>
-
     </div>
 </div>
 
-
-{{-- ================= PEGAWAI ================= --}}
-<div class="card card-shadow mb-4">
-    <div class="card-body">
-
-        <h5 class="section-title mb-3">Pilih Pegawai <span class="text-danger">*</span></h5>
-
-        <div class="mb-3">
-            <select name="pegawai[]" 
-                    id="pegawaiSelect"
-                    class="form-select" 
-                    multiple>
-                @foreach($pegawai as $p)
-                    <option value="{{ $p->id }}">
-                        {{ $p->nama }} - {{ $p->jabatan }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-
-    </div>
-</div>
-
-{{-- ================= RINCIAN ================= --}}
+{{-- ================= PESERTA (PEGAWAI + NON PEGAWAI) ================= --}}
 <div class="card card-shadow mb-4">
     <div class="card-body">
         
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="section-title mb-0">Rincian Biaya <span class="text-danger">*</span></h5>
-            <button type="button"
-                class="btn btn-outline-success btn-sm"
-                onclick="copyToAll()">
-                Salin ke Semua Pegawai
-            </button>
+            <h5 class="section-title mb-0">Peserta Perjalanan</h5>
+            <div>
+                <button type="button" class="btn btn-outline-primary btn-sm me-2" onclick="addPegawaiRow()">
+                    + Tambah Pegawai
+                </button>
+                <button type="button" class="btn btn-outline-success btn-sm me-2" onclick="addNonPegawaiRow()">
+                    + Tambah Non-Pegawai
+                </button>
+                <button type="button" class="btn btn-outline-info btn-sm" onclick="copyToAllPeserta()" id="btnCopyToAll" style="display: none;">
+                    📋 Copy ke Semua Peserta
+                </button>
+            </div>
         </div>
 
-        <div id="rincianContainer"></div>
+        <div id="pesertaContainer">
+            {{-- Pegawai akan ditambahkan via JS --}}
+            {{-- Non-pegawai akan ditambahkan via JS --}}
+        </div>
 
     </div>
 </div>
@@ -168,303 +149,296 @@
 
 </form>
 
-{{-- ================= SCRIPT ================= --}}
-
-<link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 <script>
     const jenisBiayaData = @json($jenisBiaya);
-</script>
+    const pegawaiData = @json($pegawai);
+    let pesertaCounter = 0;
 
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-
-    const select = new TomSelect("#pegawaiSelect", {
-        plugins: ['remove_button'],
-        create: false,
-        placeholder: "Pilih satu pegawai atau lebih",
-        sortField: {
-            field: "text",
-            direction: "asc"
-        },
-        onChange: function (values) {
-            generateRincian(values);
-        }
+    document.addEventListener("DOMContentLoaded", function () {
+        // Default tambah 1 baris pegawai
+        addPegawaiRow();
     });
 
-});
+    function getJumlahHari() {
+        const mulai = document.getElementById('tanggal_mulai').value;
+        const akhir = document.getElementById('tanggal_akhir').value;
+        if (!mulai || !akhir) return 0;
+        const tglMulai = new Date(mulai);
+        const tglAkhir = new Date(akhir);
+        const selisih = (tglAkhir - tglMulai) / (1000 * 60 * 60 * 24);
+        return selisih >= 0 ? selisih + 1 : 0;
+    }
 
-function getJumlahHari() {
-    const mulai = document.getElementById('tanggal_mulai').value;
-    const akhir = document.getElementById('tanggal_akhir').value;
-
-    if (!mulai || !akhir) return 0;
-
-    const tglMulai = new Date(mulai);
-    const tglAkhir = new Date(akhir);
-
-    const selisih = (tglAkhir - tglMulai) / (1000 * 60 * 60 * 24);
-
-    return selisih >= 0 ? selisih + 1 : 0; // inklusif
-}
-
-function generateRincian(selectedIds) {
-
-    const container = document.getElementById('rincianContainer');
-
-    const existing = Array.from(container.querySelectorAll('[data-pegawai]'))
-        .map(div => div.getAttribute('data-pegawai'));
-
-    // hapus pegawai yang di-unselect
-    existing.forEach(id => {
-        if (!selectedIds.includes(id)) {
-            container.querySelector(`[data-pegawai="${id}"]`).remove();
+    // Function untuk mengecek dan menampilkan/sembunyikan tombol Copy to All
+    function toggleCopyToAllButton() {
+        const container = document.getElementById('pesertaContainer');
+        const pesertaCards = container.querySelectorAll('.peserta-card');
+        const btnCopyToAll = document.getElementById('btnCopyToAll');
+        
+        if (btnCopyToAll) {
+            btnCopyToAll.style.display = pesertaCards.length >= 2 ? 'inline-flex' : 'none';
         }
-    });
+    }
 
-    // tambah pegawai baru TANPA reset semua
-    selectedIds.forEach(function (pegawaiId) {
+    // Function untuk menyalin rincian dari peserta pertama ke semua peserta
+    function copyToAllPeserta() {
+        const container = document.getElementById('pesertaContainer');
+        const pesertaCards = container.querySelectorAll('.peserta-card');
+        
+        if (pesertaCards.length < 2) {
+            alert('Minimal ada 2 peserta untuk melakukan copy');
+            return;
+        }
+        
+        // Ambil peserta pertama sebagai sumber
+        const firstPeserta = pesertaCards[0];
+        const firstTbody = firstPeserta.querySelector('tbody');
+        
+        if (!firstTbody || firstTbody.querySelectorAll('tr').length === 0) {
+            alert('Peserta pertama belum memiliki rincian biaya. Silakan tambah rincian terlebih dahulu.');
+            return;
+        }
+        
+        const firstRows = firstTbody.querySelectorAll('tr');
+        let copiedCount = 0;
+        
+        // Loop mulai dari peserta ke-2 (indeks 1)
+        for (let i = 1; i < pesertaCards.length; i++) {
+            const targetPeserta = pesertaCards[i];
+            const targetTbody = targetPeserta.querySelector('tbody');
+            const targetPesertaId = targetPeserta.getAttribute('data-peserta-id');
+            
+            if (!targetTbody) continue;
+            
+            // Kosongkan tbody target terlebih dahulu
+            targetTbody.innerHTML = '';
+            
+            // Clone setiap row dari peserta pertama
+            firstRows.forEach(row => {
+                const cloneRow = row.cloneNode(true);
+                
+                // Update semua name attribute dengan pesertaId target
+                const allInputsSelects = cloneRow.querySelectorAll('input, select');
+                allInputsSelects.forEach(field => {
+                    const name = field.getAttribute('name');
+                    if (name) {
+                        // Ganti pesertaId di name attribute: rincian[LAMA][index][field] -> rincian[BARU][index][field]
+                        const newName = name.replace(/rincian\[[^\]]+\]/, `rincian[${targetPesertaId}]`);
+                        field.setAttribute('name', newName);
+                    }
+                });
+                
+                targetTbody.appendChild(cloneRow);
+            });
+            
+            copiedCount++;
+        }
+        
+        alert(`Berhasil menyalin rincian ke ${copiedCount} peserta lainnya.`);
+    }
 
-        if (existing.includes(pegawaiId)) return;
-
-        const option = document.querySelector(
-            '#pegawaiSelect option[value="' + pegawaiId + '"]'
-        );
-
-        const nama = option.text;
+    function addPegawaiRow() {
+        const container = document.getElementById('pesertaContainer');
+        const pesertaId = `pegawai_${Date.now()}_${pesertaCounter++}`;
+        
+        let pegawaiOptions = '<option value="">Pilih Pegawai</option>';
+        pegawaiData.forEach(p => {
+            pegawaiOptions += `<option value="${p.id}">${p.nama} - ${p.jabatan} (${p.nip})</option>`;
+        });
 
         container.insertAdjacentHTML('beforeend', `
-            <div class="border rounded p-3 mb-4" data-pegawai="${pegawaiId}">
-                <h6 class="fw-bold text-success">${nama}</h6>
+            <div class="peserta-card border rounded p-3 mb-3" data-peserta-id="${pesertaId}" data-tipe="pegawai">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h6 class="fw-bold text-primary mb-0">👔 Peserta: Pegawai</h6>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePeserta(this)">Hapus</button>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label>Pilih Pegawai <span class="text-danger">*</span></label>
+                        <select name="peserta[${pesertaId}][pegawai_id]" class="form-select" required>
+                            ${pegawaiOptions}
+                        </select>
+                    </div>
+                </div>
 
-                <button type="button"
-                    class="btn btn-sm btn-outline-success mb-2"
-                    onclick="addRincianRow(${pegawaiId})">
-                    + Tambah Rincian
-                </button>
+                <div class="d-flex gap-2 mb-2">
+                    <button type="button" class="btn btn-sm btn-outline-success" onclick="addRincianToPeserta('${pesertaId}')">
+                        + Tambah Rincian Biaya
+                    </button>
+                </div>
 
                 <div class="table-responsive">
                     <table class="table table-bordered" style="min-width: 1000px;">
-                    <thead>
-                        <tr>
-                            <th>Jenis</th>
-                            <th>Uraian</th>
-                            <th>Volume</th>
-                            <th>Satuan</th>
-                            <th>Tarif</th>
-                            <th>Total</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody-${pegawaiId}"></tbody>
-                </table>
+                        <thead>
+                            <tr><th>Jenis</th><th>Uraian</th><th>Volume</th><th>Satuan</th><th>Tarif</th><th>Total</th><th>Aksi</th></tr>
+                        </thead>
+                        <tbody id="tbody-${pesertaId}"></tbody>
+                    </table>
                 </div>
             </div>
         `);
-    });
-}
-
-function addRincianRow(pegawaiId) {
-
-    const tbody = document.getElementById(`tbody-${pegawaiId}`);
-    const index = Date.now();
-
-    let jenisOptions = '';
-    jenisBiayaData.forEach(jenis => {
-        jenisOptions += `<option value="${jenis.id}">
-                            ${jenis.nama_biaya}
-                         </option>`;
-    });
-
-    const jumlahHari = getJumlahHari();
-
-    tbody.insertAdjacentHTML('beforeend', `
-    <tr>
-        <td>
-            <select name="rincian[${pegawaiId}][${index}][jenis_biaya_id]"
-                class="form-select">
-                ${jenisOptions}
-            </select>
-        </td>
-        <td>
-            <input type="text"
-                name="rincian[${pegawaiId}][${index}][uraian]"
-                class="form-control"
-                placeholder="Contoh: Biaya taksi perjalanan dinas daerah">
-        </td>
-        <td>
-            <input type="number"
-                name="rincian[${pegawaiId}][${index}][volume]"
-                class="form-control volume-field"
-                value="${jumlahHari}"
-                >
-        </td>
-        <td>
-            <input type="text"
-                name="rincian[${pegawaiId}][${index}][satuan]"
-                class="form-control"
-                value="hari"
-                >
-        </td>
-        <td>
-            <input type="number"
-                name="rincian[${pegawaiId}][${index}][tarif]"
-                class="form-control tarif-field">
-        </td>
-        <td>
-            <input type="number"
-                name="rincian[${pegawaiId}][${index}][total]"
-                class="form-control total-field"
-                readonly>
-        </td>
-        <td>
-            <button type="button"
-                class="btn btn-sm btn-danger"
-                onclick="this.closest('tr').remove()">
-                Hapus
-            </button>
-        </td>
-    </tr>
-    `);
-}
-
-function copyToAll() {
-
-    const tables = document.querySelectorAll('#rincianContainer tbody');
-
-    if (tables.length <= 1) {
-        alert('Minimal pilih 2 pegawai');
-        return;
+        
+        toggleCopyToAllButton();
     }
 
-    const firstRows = tables[0].querySelectorAll('tr');
+    function addNonPegawaiRow() {
+        const container = document.getElementById('pesertaContainer');
+        const pesertaId = `nonpegawai_${Date.now()}_${pesertaCounter++}`;
 
-    for (let i = 1; i < tables.length; i++) {
+        container.insertAdjacentHTML('beforeend', `
+            <div class="peserta-card border rounded p-3 mb-3" data-peserta-id="${pesertaId}" data-tipe="nonpegawai">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h6 class="fw-bold text-success mb-0">👤 Peserta: Non-Pegawai</h6>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePeserta(this)">Hapus</button>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label>Nama Lengkap <span class="text-danger">*</span></label>
+                        <input type="text" name="peserta[${pesertaId}][nama]" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label>NIK / Identitas</label>
+                        <input type="text" name="peserta[${pesertaId}][nik]" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label>Jabatan / Instansi</label>
+                        <input type="text" name="peserta[${pesertaId}][instansi]" class="form-control">
+                    </div>
+                </div>
 
-        tables[i].innerHTML = '';
+                <div class="d-flex gap-2 mb-2">
+                    <button type="button" class="btn btn-sm btn-outline-success" onclick="addRincianToPeserta('${pesertaId}')">
+                        + Tambah Rincian Biaya
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyRincianFromFirst('${pesertaId}')">
+                        📋 Copy dari Peserta Pertama
+                    </button>
+                </div>
 
+                <div class="table-responsive">
+                    <table class="table table-bordered" style="min-width: 1000px;">
+                        <thead>
+                            <tr><th>Jenis</th><th>Uraian</th><th>Volume</th><th>Satuan</th><th>Tarif</th><th>Total</th><th>Aksi</th></tr>
+                        </thead>
+                        <tbody id="tbody-${pesertaId}"></tbody>
+                    </table>
+                </div>
+            </div>
+        `);
+        
+        toggleCopyToAllButton();
+    }
+    
+    // Function untuk menyalin rincian dari peserta pertama ke peserta tertentu
+    function copyRincianFromFirst(targetPesertaId) {
+        const container = document.getElementById('pesertaContainer');
+        const pesertaCards = container.querySelectorAll('.peserta-card');
+        
+        if (pesertaCards.length < 2) {
+            alert('Tidak ada peserta lain sebagai sumber. Minimal 2 peserta.');
+            return;
+        }
+        
+        const firstPeserta = pesertaCards[0];
+        const firstTbody = firstPeserta.querySelector('tbody');
+        
+        if (!firstTbody || firstTbody.querySelectorAll('tr').length === 0) {
+            alert('Peserta pertama belum memiliki rincian biaya. Silakan tambah rincian terlebih dahulu.');
+            return;
+        }
+        
+        const targetPeserta = document.querySelector(`.peserta-card[data-peserta-id="${targetPesertaId}"]`);
+        const targetTbody = targetPeserta.querySelector('tbody');
+        
+        if (!targetTbody) return;
+        
+        const firstRows = firstTbody.querySelectorAll('tr');
+        
+        // Kosongkan tbody target
+        targetTbody.innerHTML = '';
+        
+        // Clone setiap row
         firstRows.forEach(row => {
+            const cloneRow = row.cloneNode(true);
+            
+            const allInputsSelects = cloneRow.querySelectorAll('input, select');
+            allInputsSelects.forEach(field => {
+                const name = field.getAttribute('name');
+                if (name) {
+                    const newName = name.replace(/rincian\[[^\]]+\]/, `rincian[${targetPesertaId}]`);
+                    field.setAttribute('name', newName);
+                }
+            });
+            
+            targetTbody.appendChild(cloneRow);
+        });
+        
+        alert('Berhasil menyalin rincian dari peserta pertama.');
+    }
 
-        const clone = row.cloneNode(true);
-        const pegawaiId = tables[i].id.replace('tbody-', '');
-
-        // ambil semua input & select di row asli
-        const originalFields = row.querySelectorAll('input, select');
-        const clonedFields   = clone.querySelectorAll('input, select');
-
-        clonedFields.forEach((field, index) => {
-
-            const original = originalFields[index];
-
-            // 1️⃣ salin VALUE (ini yg bikin dropdown ikut ke-copy)
-            field.value = original.value;
-
-            // 2️⃣ ganti pegawaiId di name
-            const name = field.getAttribute('name');
-            const newName = name.replace(
-                /rincian\[\d+\]/,
-                `rincian[${pegawaiId}]`
-            );
-
-            field.setAttribute('name', newName);
+    function addRincianToPeserta(pesertaId) {
+        const tbody = document.getElementById(`tbody-${pesertaId}`);
+        if (!tbody) return;
+        
+        const index = Date.now();
+        const jumlahHari = getJumlahHari();
+        
+        let jenisOptions = '';
+        jenisBiayaData.forEach(jenis => {
+            jenisOptions += `<option value="${jenis.id}">${jenis.nama_biaya}</option>`;
         });
 
-        tables[i].appendChild(clone);
-    });
+        tbody.insertAdjacentHTML('beforeend', `
+            <tr>
+                <td><select name="rincian[${pesertaId}][${index}][jenis_biaya_id]" class="form-select">${jenisOptions}</select></td>
+                <td><input type="text" name="rincian[${pesertaId}][${index}][uraian]" class="form-control" placeholder="Uraian biaya"></td>
+                <td><input type="number" name="rincian[${pesertaId}][${index}][volume]" class="form-control volume-field" value="${jumlahHari}"></td>
+                <td><input type="text" name="rincian[${pesertaId}][${index}][satuan]" class="form-control" value="hari"></td>
+                <td><input type="number" name="rincian[${pesertaId}][${index}][tarif]" class="form-control tarif-field"></td>
+                <td><input type="number" name="rincian[${pesertaId}][${index}][total]" class="form-control total-field" readonly></td>
+                <td><button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">Hapus</button></td>
+            </tr>
+        `);
     }
 
-    alert('Berhasil disalin ke semua pegawai');
-}
-
-</script>
-<script>
-
-function calculateTotal(row) {
-    const volume = parseFloat(row.querySelector('.volume-field')?.value) || 0;
-    const tarif  = parseFloat(row.querySelector('.tarif-field')?.value) || 0;
-    const totalField = row.querySelector('.total-field');
-
-    totalField.value = (volume * tarif).toFixed(2);
-}
-
-document.addEventListener('input', function(e){
-
-    if (e.target.classList.contains('volume-field') ||
-        e.target.classList.contains('tarif-field')) {
-
-        const row = e.target.closest('tr');
-        calculateTotal(row);
+    function removePeserta(btn) {
+        btn.closest('.peserta-card').remove();
+        toggleCopyToAllButton();
     }
-});
 
-function updateSemuaVolume() {
-    const jumlahHari = getJumlahHari();
-
-    document.querySelectorAll('.volume-field').forEach(function(field){
-        field.value = jumlahHari;
-        calculateTotal(field.closest('tr'));
+    // Event listener untuk perhitungan total
+    document.addEventListener('input', function(e){
+        if (e.target.classList.contains('volume-field') || e.target.classList.contains('tarif-field')) {
+            const row = e.target.closest('tr');
+            const volume = parseFloat(row.querySelector('.volume-field')?.value) || 0;
+            const tarif = parseFloat(row.querySelector('.tarif-field')?.value) || 0;
+            const totalField = row.querySelector('.total-field');
+            if (totalField) totalField.value = (volume * tarif).toFixed(2);
+        }
     });
-}
 
-document.getElementById('tanggal_mulai')
-    .addEventListener('change', updateSemuaVolume);
+    function updateSemuaVolume() {
+        const jumlahHari = getJumlahHari();
+        document.querySelectorAll('.volume-field').forEach(function(field){
+            field.value = jumlahHari;
+            const row = field.closest('tr');
+            const tarif = parseFloat(row.querySelector('.tarif-field')?.value) || 0;
+            const totalField = row.querySelector('.total-field');
+            if (totalField) totalField.value = (jumlahHari * tarif).toFixed(2);
+        });
+    }
 
-document.getElementById('tanggal_akhir')
-    .addEventListener('change', updateSemuaVolume);
+    document.getElementById('tanggal_mulai').addEventListener('change', updateSemuaVolume);
+    document.getElementById('tanggal_akhir').addEventListener('change', updateSemuaVolume);
 </script>
 
 <style>
-.table-responsive {
-    overflow-x: auto;
-}
-
-.table-responsive table {
-    min-width: 950px; /* bisa diturunin dari 1200 */
-    width: max-content;
-}
-
-.table th,
-.table td {
-    white-space: nowrap;
-}
-
-/* Kolom Uraian (ke-2) lebih lebar */
-.table th:nth-child(2),
-.table td:nth-child(2) {
-    min-width: 280px;
-}
-
-/* Volume (ke-3) kecil */
-.table th:nth-child(3),
-.table td:nth-child(3) {
-    min-width: 80px;
-    max-width: 100px;
-}
-
-/* Satuan (ke-4) kecil */
-.table th:nth-child(4),
-.table td:nth-child(4) {
-    min-width: 90px;
-    max-width: 110px;
-}
-
-/* Tarif (ke-5) sedang */
-.table th:nth-child(5),
-.table td:nth-child(5) {
-    min-width: 120px;
-    max-width: 140px;
-}
-
-/* Total (ke-6) sedang */
-.table th:nth-child(6),
-.table td:nth-child(6) {
-    min-width: 120px;
-}
-
-/* Aksi (ke-7) kecil */
-.table th:nth-child(7),
-.table td:nth-child(7) {
-    min-width: 70px;
-}
+.table-responsive { overflow-x: auto; }
+.table-responsive table { min-width: 950px; width: max-content; }
+.table th, .table td { white-space: nowrap; }
+.table th:nth-child(2), .table td:nth-child(2) { min-width: 280px; }
 </style>
-@endsection
+
+@endsection;
