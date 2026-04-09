@@ -26,18 +26,30 @@ public function __construct($perjalanan)
     $this->perjalanan = $perjalanan;
 
     // ambil semua rincian unik (jenis + uraian)
-    $this->columns = $perjalanan->pegawaiPerjalanan
-        ->flatMap(fn($pp) => $pp->rincian)
-        ->map(function ($r) {
-            return [
-                'jenis_id' => $r->jenis_biaya_id,
-                'uraian'   => $r->uraian ?? '-',
-                'label'    => strtoupper($r->uraian ?? '-'),
-                'satuan'   => $r->satuan ?? 'VOL',
-            ];
-        })
-        ->unique(fn($item) => $item['jenis_id'].'-'.$item['uraian'])
-        ->values();
+    $this->columns = collect()
+
+    // dari pegawai
+    ->merge(
+        $perjalanan->pegawaiPerjalanan
+            ->flatMap(fn($pp) => $pp->rincian)
+    )
+
+    // dari nonpegawai
+    ->merge(
+        $perjalanan->nonpegawai
+            ->flatMap(fn($np) => $np->rincian)
+    )
+
+    ->map(function ($r) {
+        return [
+            'jenis_id' => $r->jenis_biaya_id,
+            'uraian'   => $r->uraian ?? '-',
+            'label'    => strtoupper($r->uraian ?? '-'),
+            'satuan'   => $r->satuan ?? 'VOL',
+        ];
+    })
+    ->unique(fn($item) => $item['jenis_id'].'-'.$item['uraian'])
+    ->values();
 }
 
     public function startCell(): string
@@ -55,6 +67,9 @@ public function __construct($perjalanan)
         ? $mulai->translatedFormat('d F Y')
         : $mulai->translatedFormat('d').' - '.$akhir->translatedFormat('d F Y');
 
+    // =====================
+    // PEGAWAI
+    // =====================
     foreach ($this->perjalanan->pegawaiPerjalanan as $pp) {
 
         $row = [
@@ -69,16 +84,15 @@ public function __construct($perjalanan)
 
         foreach ($this->columns as $col) {
 
-            $r = $pp->rincian
-                ->first(function ($item) use ($col) {
-                    return $item->jenis_biaya_id == $col['jenis_id']
-                        && ($item->uraian ?? '-') == $col['uraian'];
-                });
+            $r = $pp->rincian->first(function ($item) use ($col) {
+                return $item->jenis_biaya_id == $col['jenis_id']
+                    && ($item->uraian ?? '-') == $col['uraian'];
+            });
 
             if ($r) {
-                $row[] = $r->volume ?? '-';
-                $row[] = $r->tarif ?? '-';
-                $row[] = $r->total ?? '-';
+                $row[] = (int) $r->volume;
+                $row[] = $r->tarif;
+                $row[] = $r->total;
 
                 $totalAll += $r->total ?? 0;
             } else {
@@ -89,8 +103,50 @@ public function __construct($perjalanan)
         }
 
         $row[] = $totalAll ?: '-';
-        $row[] = ''; // tanda tangan
-        $row[] = $this->perjalanan->nama_kegiatan; // keterangan
+        $row[] = '';
+        $row[] = $this->perjalanan->nama_kegiatan;
+
+        $rows->push($row);
+    }
+
+    // =====================
+    // NON PEGAWAI
+    // =====================
+    foreach ($this->perjalanan->nonpegawai as $np) {
+
+        $row = [
+            $no++,
+            $np->nama . ' (Non-Pegawai)',
+            $this->perjalanan->dari_kota,
+            $this->perjalanan->tujuan_kota,
+            $jadwal,
+        ];
+
+        $totalAll = 0;
+
+        foreach ($this->columns as $col) {
+
+            $r = $np->rincian->first(function ($item) use ($col) {
+                return $item->jenis_biaya_id == $col['jenis_id']
+                    && ($item->uraian ?? '-') == $col['uraian'];
+            });
+
+            if ($r) {
+                $row[] = (int) $r->volume;
+                $row[] = $r->tarif;
+                $row[] = $r->total;
+
+                $totalAll += $r->total ?? 0;
+            } else {
+                $row[] = '-';
+                $row[] = '-';
+                $row[] = '-';
+            }
+        }
+
+        $row[] = $totalAll ?: '-';
+        $row[] = '';
+        $row[] = $this->perjalanan->nama_kegiatan;
 
         $rows->push($row);
     }

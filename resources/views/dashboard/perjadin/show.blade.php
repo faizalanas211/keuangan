@@ -106,6 +106,9 @@
 </div>
 
 {{-- ================= PEGAWAI & RINCIAN (ACCORDION) ================= --}}
+<h5 class="fw-semibold text-primary mb-3">
+    Data Pegawai
+</h5>
 <div class="accordion" id="accordionPegawai">
 
 @foreach($perjalanan->pegawaiPerjalanan as $index => $pp)
@@ -181,6 +184,89 @@
 
 @endforeach
 </div>
+
+{{-- ================= NON PEGAWAI ================= --}}
+@if($perjalanan->nonpegawai && $perjalanan->nonpegawai->count())
+<div class="accordion mt-4" id="accordionNonPegawai">
+
+@foreach($perjalanan->nonpegawai as $index => $np)
+
+@php
+    $grandTotal = 0;
+@endphp
+
+<h5 class="fw-semibold text-success mt-4 mb-3">
+    Data Non-Pegawai
+</h5>
+
+<div class="accordion-item mb-3 card-shadow">
+    <h2 class="accordion-header" id="headingNP{{ $index }}">
+        <button class="accordion-button collapsed fw-semibold" type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapseNP{{ $index }}">
+            
+            👤 {{ $np->nama }}
+            @if($np->instansi)
+                ({{ $np->instansi }})
+            @endif
+        </button>
+    </h2>
+
+    <div id="collapseNP{{ $index }}"
+         class="accordion-collapse collapse"
+         data-bs-parent="#accordionNonPegawai">
+
+        <div class="accordion-body">
+
+            <div class="mb-3 d-flex gap-2">
+                <a href="{{ route('perjadin.export.kuitansiNonPegawai', $np->id) }}"
+                   class="btn btn-sm btn-success">
+                   Export Kuitansi & SPD
+                </a>
+                <a href="{{ route('perjadin.export.sbyNonPegawai', $np->id) }}"
+                   class="btn btn-sm btn-primary">
+                   Export SBY
+                </a>
+            </div>
+
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Jenis Biaya</th>
+                        <th>Volume</th>
+                        <th>Satuan</th>
+                        <th>Tarif</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($np->rincian as $r)
+                        @php $grandTotal += $r->total; @endphp
+                        <tr>
+                            <td>{{ $r->jenisBiaya->nama_biaya }}</td>
+                            <td>{{ (int) $r->volume }}</td>
+                            <td>{{ $r->satuan }}</td>
+                            <td>Rp{{ number_format($r->tarif,0,',','.') }}</td>
+                            <td>Rp{{ number_format($r->total,0,',','.') }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+
+            <div class="text-end">
+                <strong>
+                    Total Non-Pegawai:
+                    Rp{{ number_format($grandTotal,0,',','.') }}
+                </strong>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@endforeach
+</div>
+@endif
 
 <div class="card card-shadow mt-4">
     <div class="card-body text-end">

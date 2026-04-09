@@ -49,7 +49,7 @@
                         <th>Rute</th>
                         <th>Tanggal</th>
                         <th>Kegiatan</th>
-                        <th>Pegawai</th>
+                        <th>Peserta</th>
                         <th width="180">Aksi</th>
                     </tr>
                 </thead>
@@ -77,7 +77,7 @@
                         </td>
                         <td>
                             <span class="badge bg-success">
-                                {{ $item->pegawai->count() }} Orang
+                                {{ $item->pegawai->count() + $item->nonpegawai->count() }} Orang
                             </span>
                         </td>
                         <td>

@@ -116,10 +116,13 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
     //     [PerjadinController::class, 'exportSbyPenyimpan']
     // )->name('perjadin.export.sby');
     Route::get('perjadin/export/sby/{pp}', [PerjadinController::class, 'exportSbyPenyimpan'])
-    ->name('perjadin.export.sby');
-    Route::get('/perjadin/kuitansi/{pegawaiPerjalanan}',
-        [PerjadinController::class, 'exportKuitansi']
-    )->name('perjadin.export.kuitansi');
+        ->name('perjadin.export.sby');
+    Route::get('perjadin/export/sby-non-pegawai/{np}', [PerjadinController::class, 'exportSbyNonPegawai'])
+        ->name('perjadin.export.sbyNonPegawai');
+    Route::get('/perjadin/kuitansi/{pegawaiPerjalanan}', [PerjadinController::class, 'exportKuitansi'])
+        ->name('perjadin.export.kuitansi');
+    Route::get('/perjadin/kuitansi-non-pegawai/{nonpegawai}', [PerjadinController::class, 'exportKuitansiNonPegawai'])
+        ->name('perjadin.export.kuitansiNonPegawai');
 
     // Pengaturan Template
     Route::resource('template', TemplateController::class);

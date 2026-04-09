@@ -22,10 +22,16 @@ class RincianBiaya extends Model
         'total',
     ];
 
+    // protected $casts = [
+    //     'volume' => 'decimal:2',
+    //     'tarif'  => 'decimal:2',
+    //     'total'  => 'decimal:2',
+    // ];
+
     protected $casts = [
-        'volume' => 'decimal:2',
-        'tarif'  => 'decimal:2',
-        'total'  => 'decimal:2',
+        'volume' => 'integer',
+        'tarif'  => 'integer',
+        'total'  => 'integer',
     ];
 
     /*

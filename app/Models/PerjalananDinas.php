@@ -50,6 +50,11 @@ class PerjalananDinas extends Model
                     ->withTimestamps();
     }
 
+    public function nonpegawai()
+    {
+        return $this->hasMany(NonPegawai::class, 'perjalanan_dinas_id');
+    }
+
     // surat
     public function surat()
     {

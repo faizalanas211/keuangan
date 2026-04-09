@@ -167,7 +167,7 @@ class SbyPenyimpanExport implements WithEvents, WithCustomStartCell
                 }
 
                 // kalau mau tetap ada penerima (E kolom)
-                $sheet->setCellValue('E29', $this->data['kepada']);
+                $sheet->setCellValue('E29', $this->data['kepada_nama']);
 
                 $sheet->mergeCells('B30:D30');
                 $sheet->mergeCells('H30:I30');

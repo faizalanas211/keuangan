@@ -249,7 +249,7 @@
         container.insertAdjacentHTML('beforeend', `
             <div class="peserta-card border rounded p-3 mb-3" data-peserta-id="${pesertaId}" data-tipe="pegawai">
                 <div class="d-flex justify-content-between align-items-start mb-3">
-                    <h6 class="fw-bold text-primary mb-0">👔 Peserta: Pegawai</h6>
+                    <h6 class="fw-bold text-primary mb-0">👤 PPeserta: Pegawai</h6>
                     <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePeserta(this)">Hapus</button>
                 </div>
                 

@@ -90,7 +90,7 @@ class PerjadinController extends Controller
         ]);
 
         // ===============================
-        // LOOP PESERTA (🔥 INI YG BARU)
+        // LOOP PESERTA 
         // ===============================
         foreach ($request->peserta as $pesertaKey => $peserta) {
 
@@ -186,8 +186,21 @@ class PerjadinController extends Controller
 
         $grandTotalPerjalanan = 0;
 
+        // =======================
+        // TOTAL PEGAWAI
+        // =======================
+
         foreach ($perjalanan->pegawaiPerjalanan as $pp) {
             $grandTotalPerjalanan += $pp->rincian->sum('total');
+        }
+
+        // =======================
+        // TOTAL NON PEGAWAI
+        // =======================
+        foreach ($perjalanan->nonpegawai as $np) {
+            foreach ($np->rincian as $r) {
+                $grandTotalPerjalanan += $r->total;
+            }
         }
 
         return view('dashboard.perjadin.show', compact(
@@ -207,10 +220,52 @@ class PerjadinController extends Controller
         $pegawai = Pegawai::all();
         $jenisBiaya = JenisBiaya::all();
 
+        $existingPegawai = $perjalanan->pegawaiPerjalanan->map(function($pp) {
+            return [
+                'id' => $pp->pegawai_id,
+                'tipe' => 'pegawai',
+                'peserta_id' => 'pegawai_' . $pp->pegawai_id,
+                'nama' => $pp->pegawai->nama . ' - ' . $pp->pegawai->jabatan . ' (' . $pp->pegawai->nip . ')',
+                'rincian' => $pp->rincian->map(function($r) {
+                    return [
+                        'jenis_biaya_id' => $r->jenis_biaya_id,
+                        'uraian' => $r->uraian,
+                        'volume' => $r->volume,
+                        'satuan' => $r->satuan,
+                        'tarif' => $r->tarif,
+                        'total' => $r->total,
+                    ];
+                })->toArray()
+            ];
+        });
+
+        $existingNonPegawai = $perjalanan->nonpegawai->map(function($np) {
+            return [
+                'id' => $np->id,
+                'tipe' => 'nonpegawai',
+                'peserta_id' => 'nonpegawai_' . $np->id,
+                'nama' => $np->nama,
+                'nik' => $np->nik,
+                'instansi' => $np->instansi,
+                'rincian' => $np->rincian->map(function($r) {
+                    return [
+                        'jenis_biaya_id' => $r->jenis_biaya_id,
+                        'uraian' => $r->uraian,
+                        'volume' => $r->volume,
+                        'satuan' => $r->satuan,
+                        'tarif' => $r->tarif,
+                        'total' => $r->total,
+                    ];
+                })->toArray()
+            ];
+        });
+
         return view('dashboard.perjadin.edit', compact(
             'perjalanan',
             'pegawai',
-            'jenisBiaya'
+            'jenisBiaya',
+            'existingPegawai',
+            'existingNonPegawai'
         ));
     }
 
@@ -246,46 +301,103 @@ class PerjadinController extends Controller
                 ]
             );
 
-            // Hapus pivot lama + rincian lama
+            // ===============================
+            // HAPUS DATA LAMA
+            // ===============================
             foreach ($perjalanan->pegawaiPerjalanan as $pp) {
                 $pp->rincian()->delete();
                 $pp->delete();
             }
 
-            // Insert ulang
-            foreach ($request->pegawai as $pegawaiId) {
+            foreach ($perjalanan->nonpegawai as $np) {
+                $np->rincian()->delete();
+                $np->delete();
+            }
 
-                $pp = PerjalananDinasPegawai::create([
-                    'perjalanan_dinas_id' => $perjalanan->id,
-                    'pegawai_id'          => $pegawaiId,
-                ]);
 
-                if (!empty($request->rincian[$pegawaiId])) {
+            // ===============================
+            // INSERT ULANG (🔥 FIXED)
+            // ===============================
+            foreach ($request->peserta as $pesertaKey => $peserta) {
+                
+                $tipe = explode('_', $pesertaKey)[0];
 
-                    foreach ($request->rincian[$pegawaiId] as $rincian) {
+                // ===============================
+                // PEGAWAI
+                // ===============================
+                if ($tipe === 'pegawai') {
 
-                        // skip kalau kosong semua
-                        if (
-                            empty($rincian['jenis_biaya_id']) &&
-                            empty($rincian['uraian']) &&
-                            empty($rincian['volume']) &&
-                            empty($rincian['tarif'])
-                        ) {
-                            continue;
+                    if (empty($peserta['pegawai_id'])) continue;
+
+                    $pp = PerjalananDinasPegawai::create([
+                        'perjalanan_dinas_id' => $perjalanan->id,
+                        'pegawai_id' => $peserta['pegawai_id'],
+                    ]);
+
+                    if (isset($request->rincian[$pesertaKey])) {
+                        foreach ($request->rincian[$pesertaKey] as $r) {
+
+                            if (
+                                empty($r['jenis_biaya_id']) &&
+                                empty($r['uraian']) &&
+                                empty($r['volume']) &&
+                                empty($r['tarif'])
+                            ) continue;
+
+                            $volume = (int) ($r['volume'] ?? 0);
+                            $tarif  = (int) ($r['tarif'] ?? 0);
+
+                            RincianBiaya::create([
+                                'perjalanan_dinas_pegawai_id' => $pp->id,
+                                'jenis_biaya_id' => $r['jenis_biaya_id'],
+                                'uraian' => $r['uraian'] ?? null,
+                                'volume' => $volume,
+                                'satuan' => $r['satuan'] ?? '-',
+                                'tarif'  => $tarif,
+                                'total'  => $volume * $tarif,
+                            ]);
                         }
+                    }
+                }
 
-                        $volume = $rincian['volume'] ?? 0;
-                        $tarif  = $rincian['tarif'] ?? 0;
 
-                        RincianBiaya::create([
-                            'perjalanan_dinas_pegawai_id' => $pp->id,
-                            'jenis_biaya_id' => $rincian['jenis_biaya_id'],
-                            'uraian' => $rincian['uraian'] ?? null, // ✅ tambahan
-                            'volume' => $volume ?: 0,
-                            'satuan' => $rincian['satuan'] ?? '-',
-                            'tarif'  => $tarif ?: 0,
-                            'total'  => ($volume ?: 0) * ($tarif ?: 0),
-                        ]);
+                // ===============================
+                // NON PEGAWAI
+                // ===============================
+                if ($tipe === 'nonpegawai') {
+
+                    if (empty($peserta['nama'])) continue;
+
+                    $np = NonPegawai::create([
+                        'perjalanan_dinas_id' => $perjalanan->id,
+                        'nama' => $peserta['nama'],
+                        'nik'  => $peserta['nik'] ?? null,
+                        'instansi' => $peserta['instansi'] ?? null,
+                    ]);
+
+                    if (isset($request->rincian[$pesertaKey])) {
+                        foreach ($request->rincian[$pesertaKey] as $r) {
+
+                            if (
+                                empty($r['jenis_biaya_id']) &&
+                                empty($r['uraian']) &&
+                                empty($r['volume']) &&
+                                empty($r['tarif'])
+                            ) continue;
+
+                            $volume = (int) ($r['volume'] ?? 0);
+                            $tarif  = (int) ($r['tarif'] ?? 0);
+
+                            RincianBiaya::create([
+                                'nonpegawai_id' => $np->id,
+                                'jenis_biaya_id' => $r['jenis_biaya_id'],
+                                'uraian' => $r['uraian'] ?? null,
+                                'volume' => $volume,
+                                'satuan' => $r['satuan'] ?? '-',
+                                'tarif'  => $tarif,
+                                'total'  => $volume * $tarif,
+                            ]);
+                        }
                     }
                 }
             }
@@ -322,158 +434,343 @@ class PerjadinController extends Controller
             ->findOrFail($ppId);
 
         $perjalanan = $pp->perjalananDinas;
-        $tanggal = Carbon::parse($perjalanan->tanggal_terima);
+
+        $tanggalMulai = Carbon::parse($perjalanan->tanggal_mulai);
+        $tanggalAkhir = Carbon::parse($perjalanan->tanggal_akhir);
+        $tanggalTerima = Carbon::parse($perjalanan->tanggal_terima);
+
+        // format tanggal dinas
+        if ($tanggalMulai->isSameDay($tanggalAkhir)) {
+            $tanggalDinas = $tanggalMulai->translatedFormat('d F Y');
+        } else {
+            $tanggalDinas = $tanggalMulai->translatedFormat('d F Y') 
+                . ' s/d ' . 
+                $tanggalAkhir->translatedFormat('d F Y');
+        }
 
         // total hanya untuk pegawai ini
         $total = $pp->rincian->sum('total');
 
         return Excel::download(
             new SbyPenyimpanExport([
-                'tanggal' => $tanggal,
-                'nomor' => '                  /BBPJT/'.$tanggal->format('m').'/'.$tanggal->format('Y'),
+                'tanggal' => $tanggalTerima,
+                'nomor' => '                  /BBPJT/'.$tanggalTerima->format('m').'/'.$tanggalTerima->format('Y'),
 
-                'kepada' => $pp->pegawai->nama,
+                'kepada' => 'Pegawai BBPJT',
+                'kepada_nama' => $pp->pegawai->nama,
                 'kepada_nip' => $pp->pegawai->nip,
 
                 'nominal_angka' => (float) $total,
 
+                // pakai tanggalDinas
                 'uraian' => 'Belanja Perjalanan Dinas untuk melaksanakan kegiatan '
                             .$perjalanan->nama_kegiatan.
-                            ' pada '.$tanggal->translatedFormat('d F Y').
+                            ' pada '.$tanggalDinas.
                             ' bertempat di '.$perjalanan->tujuan_kota,
 
-                'mak' => 'WA.7613.EBA.962.054.A.524111'
+                'mak' => $perjalanan->kode_mak
             ]),
             'SBY-Penyimpan-'.$pp->id.'.xlsx'
         );
     }
 
-    public function exportKuitansi($id)
-{
-    $pp = PerjalananDinasPegawai::with([
-        'pegawai',
-        'perjalananDinas.surat',
-        'rincian.jenisBiaya'
-    ])->findOrFail($id);
+    public function exportSbyNonPegawai($npId)
+    {
+        $np = NonPegawai::with(['perjalananDinas.surat', 'rincian'])
+            ->findOrFail($npId);
 
-    $perjalanan = $pp->perjalananDinas;
-    $pegawai    = $pp->pegawai;
+        $perjalanan = $np->perjalananDinas;
 
-    $tanggal = $perjalanan->tanggal_mulai;
-    $tanggalMulai = Carbon::parse($perjalanan->tanggal_mulai);
-    $tanggalAkhir = Carbon::parse($perjalanan->tanggal_akhir);
+        $tanggal_mulai = Carbon::parse($perjalanan->tanggal_mulai);
+        $tanggal_akhir = Carbon::parse($perjalanan->tanggal_akhir);
 
-    // lama perjalanan (hari)
-    $lamaPerjalanan = $tanggalMulai->diffInDays($tanggalAkhir) + 1;
-
-    $bendahara = PejabatPeriode::getByTanggal('Bendahara Pengeluaran', $tanggal);
-    $ppk       = PejabatPeriode::getByTanggal('Pejabat Pembuat Komitmen', $tanggal);
-
-    $rincian = $pp->rincian;
-    $sumTotal = $rincian->sum('total');
-
-    // ===============================
-    // LOAD TEMPLATE
-    // ===============================
-    $templateFile = Template::where('jenis', 'kuitansi_spd')
-                    ->latest()
-                    ->first();
-
-    $template = new TemplateProcessor(
-                    storage_path('app/public/' . $templateFile->file_path)
-                );
-
-    // ===============================
-    // SET DATA UMUM
-    // ===============================
-    $data = [
-        'tahun_anggaran'   => $perjalanan->tahun_anggaran ?? date('Y'),
-        'beban_mak'        => $perjalanan->kode_mak ?? '-',
-        'tanggal_terima'=> $perjalanan->surat->tanggal_terima,
-
-        'jumlah_rupiah' => 'Rp' . number_format($sumTotal, 0, ',', '.'),
-        'terbilang'     => $this->terbilang($sumTotal),
-        'keperluan'     => $perjalanan->nama_kegiatan ?? '-',
-        'nomor_spd'     => $perjalanan->surat->nomor_st ?? '-',
-        'tanggal_spd'   => $perjalanan->surat->tanggal_st
-            ? Carbon::parse($perjalanan->surat->tanggal_st)->translatedFormat('d F Y')
-            : '-',
-        'tujuan'        => $perjalanan->tujuan_kota ?? '-',
-
-        // PERJALANAN
-        'nama_kegiatan'   => $perjalanan->nama_kegiatan ?? '-',
-        'alat_angkutan'   => $perjalanan->alat_angkutan ?? '-',
-        'dari_kota'       => $perjalanan->dari_kota ?? '-',
-        'tujuan_kota'     => $perjalanan->tujuan_kota ?? '-',
-        'tingkat_perjalanan' => $perjalanan->tingkat_perjalanan ?? '-',
-
-        // TANGGAL
-        'tanggal_mulai' => $tanggalMulai->translatedFormat('d F Y'),
-        'tanggal_akhir' => $tanggalAkhir->translatedFormat('d F Y'),
-        'lama_perjalanan' => $lamaPerjalanan . ' hari',
-
-        // TANGGAL TERIMA 
-        'tanggal_terima' => $perjalanan->tanggal_terima
-                        ? Carbon::parse($perjalanan->tanggal_terima)->translatedFormat('d F Y')
-                        : '-',
-
-        // Penerima
-        'nama_penerima' => $pegawai->nama,
-        'nip_penerima'  => $pegawai->nip,
-        'pangkat_golongan_penerima' => $pegawai->pangkat_golongan ?? '-',
-        'jabatan_penerima' => $pegawai->jabatan ?? '-',
-
-        // Bendahara
-        'nama_bendahara' => $bendahara?->pegawai?->nama ?? '-',
-        'nip_bendahara'  => $bendahara?->pegawai?->nip ?? '-',
-
-        // PPK
-        'nama_ppk'       => $ppk?->pegawai?->nama ?? '-',
-        'nip_ppk'        => $ppk?->pegawai?->nip ?? '-',
-
-        'sum_total'     => number_format($sumTotal, 0, ',', '.'),
-    ];
-
-    foreach ($data as $key => $value) {
-        $template->setValue($key, $value ?? '-');
-    }
-
-    // ===============================
-    // RINCIAN DINAMIS 
-    // ===============================
-    $template->cloneRow('no', $rincian->count());
-
-    foreach ($rincian as $i => $r) {
-
-        $index = $i + 1;
-
-        $uraian = $r->uraian ?: $r->jenisBiaya->nama_biaya;
-
-        $volume = (int) $r->volume;
-
-        if ($r->volume && $r->tarif) {
-            $uraian .= " : {$volume} {$r->satuan} x Rp"
-         . number_format($r->tarif, 0, ',', '.');
+        // format tanggal dinas
+        if ($tanggal_mulai->isSameDay($tanggal_akhir)) {
+            $tanggalDinas = $tanggal_mulai->translatedFormat('d F Y');
+        } else {
+            $tanggalDinas = $tanggal_mulai->translatedFormat('d F Y')
+                .' s/d '.$tanggal_akhir->translatedFormat('d F Y');
         }
 
-        $template->setValue("no#{$index}", $index);
-        $template->setValue("uraian#{$index}", $uraian);
-        $template->setValue("jumlah#{$index}", 'Rp' . number_format($r->total, 0, ',', '.'));
-        $template->setValue("keterangan#{$index}", '-');
+        // tanggal untuk nomor & header (pakai tanggal terima)
+        $tanggal = Carbon::parse($perjalanan->tanggal_terima);
+
+        // total hanya untuk nonpegawai ini
+        $total = $np->rincian->sum('total');
+
+        return Excel::download(
+            new SbyPenyimpanExport([
+                'tanggal' => $tanggal,
+                'nomor' => '                  /BBPJT/'.$tanggal->format('m').'/'.$tanggal->format('Y'),
+
+                'kepada' => $np->instansi ?? $np->nama, // kalau instansi kosong fallback ke nama
+                'kepada_nama' => $np->nama,
+                'kepada_nip' => $np->nik ?? '-',
+
+                'nominal_angka' => (float) $total,
+
+                'uraian' => 'Belanja Perjalanan Dinas untuk melaksanakan kegiatan '
+                            .$perjalanan->nama_kegiatan.
+                            ' pada '.$tanggalDinas.
+                            ' bertempat di '.$perjalanan->tujuan_kota,
+
+                'mak' => $perjalanan->kode_mak
+            ]),
+            'SBY-NonPegawai-'.$np->id.'.xlsx'
+        );
     }
 
-    // ===============================
-    // GENERATE FILE
-    // ===============================
-    $fileName = 'Kuitansi_' . str_replace('/', '-', $perjalanan->surat->nomor_st ?? 'SPD') 
-                . '_' . $pegawai->nama . '.docx';
+    public function exportKuitansi($id)
+    {
+        $pp = PerjalananDinasPegawai::with([
+            'pegawai',
+            'perjalananDinas.surat',
+            'rincian.jenisBiaya'
+        ])->findOrFail($id);
 
-    $savePath = storage_path($fileName);
+        $perjalanan = $pp->perjalananDinas;
+        $pegawai    = $pp->pegawai;
 
-    $template->saveAs($savePath);
+        $tanggal = $perjalanan->tanggal_mulai;
+        $tanggalMulai = Carbon::parse($perjalanan->tanggal_mulai);
+        $tanggalAkhir = Carbon::parse($perjalanan->tanggal_akhir);
 
-    return response()->download($savePath)->deleteFileAfterSend(true);
-}
+        // lama perjalanan (hari)
+        $lamaPerjalanan = $tanggalMulai->diffInDays($tanggalAkhir) + 1;
+
+        $bendahara = PejabatPeriode::getByTanggal('Bendahara Pengeluaran', $tanggal);
+        $ppk       = PejabatPeriode::getByTanggal('Pejabat Pembuat Komitmen', $tanggal);
+
+        $rincian = $pp->rincian;
+        $sumTotal = $rincian->sum('total');
+
+        // ===============================
+        // LOAD TEMPLATE
+        // ===============================
+        $templateFile = Template::where('jenis', 'kuitansi_spd')
+                        ->latest()
+                        ->first();
+
+        $template = new TemplateProcessor(
+                        storage_path('app/public/' . $templateFile->file_path)
+                    );
+
+        // ===============================
+        // SET DATA UMUM
+        // ===============================
+        $data = [
+            'tahun_anggaran'   => $perjalanan->tahun_anggaran ?? date('Y'),
+            'beban_mak'        => $perjalanan->kode_mak ?? '-',
+            'tanggal_terima'=> $perjalanan->surat->tanggal_terima,
+
+            'jumlah_rupiah' => 'Rp' . number_format($sumTotal, 0, ',', '.'),
+            'terbilang'     => $this->terbilang($sumTotal),
+            'keperluan'     => $perjalanan->nama_kegiatan ?? '-',
+            'nomor_spd'     => $perjalanan->surat->nomor_st ?? '-',
+            'tanggal_spd'   => $perjalanan->surat->tanggal_st
+                ? Carbon::parse($perjalanan->surat->tanggal_st)->translatedFormat('d F Y')
+                : '-',
+            'tujuan'        => $perjalanan->tujuan_kota ?? '-',
+
+            // PERJALANAN
+            'nama_kegiatan'   => $perjalanan->nama_kegiatan ?? '-',
+            'alat_angkutan'   => $perjalanan->alat_angkutan ?? '-',
+            'dari_kota'       => $perjalanan->dari_kota ?? '-',
+            'tujuan_kota'     => $perjalanan->tujuan_kota ?? '-',
+            'tingkat_perjalanan' => $perjalanan->tingkat_perjalanan ?? '-',
+
+            // TANGGAL
+            'tanggal_mulai' => $tanggalMulai->translatedFormat('d F Y'),
+            'tanggal_akhir' => $tanggalAkhir->translatedFormat('d F Y'),
+            'lama_perjalanan' => $lamaPerjalanan . ' hari',
+
+            // TANGGAL TERIMA 
+            'tanggal_terima' => $perjalanan->tanggal_terima
+                            ? Carbon::parse($perjalanan->tanggal_terima)->translatedFormat('d F Y')
+                            : '-',
+
+            // Penerima
+            'nama_penerima' => $pegawai->nama,
+            'nip_penerima'  => $pegawai->nip,
+            'pangkat_golongan_penerima' => $pegawai->pangkat_golongan ?? '-',
+            'jabatan_penerima' => $pegawai->jabatan ?? '-',
+
+            // Bendahara
+            'nama_bendahara' => $bendahara?->pegawai?->nama ?? '-',
+            'nip_bendahara'  => $bendahara?->pegawai?->nip ?? '-',
+
+            // PPK
+            'nama_ppk'       => $ppk?->pegawai?->nama ?? '-',
+            'nip_ppk'        => $ppk?->pegawai?->nip ?? '-',
+
+            'sum_total'     => number_format($sumTotal, 0, ',', '.'),
+        ];
+
+        foreach ($data as $key => $value) {
+            $template->setValue($key, $value ?? '-');
+        }
+
+        // ===============================
+        // RINCIAN DINAMIS 
+        // ===============================
+        $template->cloneRow('no', $rincian->count());
+
+        foreach ($rincian as $i => $r) {
+
+            $index = $i + 1;
+
+            $uraian = $r->uraian ?: $r->jenisBiaya->nama_biaya;
+
+            $volume = (int) $r->volume;
+
+            if ($r->volume && $r->tarif) {
+                $uraian .= " : {$volume} {$r->satuan} x Rp"
+            . number_format($r->tarif, 0, ',', '.');
+            }
+
+            $template->setValue("no#{$index}", $index);
+            $template->setValue("uraian#{$index}", $uraian);
+            $template->setValue("jumlah#{$index}", 'Rp' . number_format($r->total, 0, ',', '.'));
+            $template->setValue("keterangan#{$index}", '-');
+        }
+
+        // ===============================
+        // GENERATE FILE
+        // ===============================
+        $fileName = 'Kuitansi_' . str_replace('/', '-', $perjalanan->surat->nomor_st ?? 'SPD') 
+                    . '_' . $pegawai->nama . '.docx';
+
+        $savePath = storage_path($fileName);
+
+        $template->saveAs($savePath);
+
+        return response()->download($savePath)->deleteFileAfterSend(true);
+    }
+
+    public function exportKuitansiNonPegawai($npId)
+    {
+        $np = NonPegawai::with([
+            'perjalananDinas.surat',
+            'rincian.jenisBiaya'
+        ])->findOrFail($npId);
+
+        $perjalanan = $np->perjalananDinas;
+
+        $tanggalMulai = Carbon::parse($perjalanan->tanggal_mulai);
+        $tanggalAkhir = Carbon::parse($perjalanan->tanggal_akhir);
+
+        // lama perjalanan
+        $lamaPerjalanan = $tanggalMulai->diffInDays($tanggalAkhir) + 1;
+
+        $bendahara = PejabatPeriode::getByTanggal('Bendahara Pengeluaran', $tanggalMulai);
+        $ppk       = PejabatPeriode::getByTanggal('Pejabat Pembuat Komitmen', $tanggalMulai);
+
+        $rincian = $np->rincian;
+        $sumTotal = $rincian->sum('total');
+
+        // ===============================
+        // LOAD TEMPLATE
+        // ===============================
+        $templateFile = Template::where('jenis', 'kuitansi_spd')
+                        ->latest()
+                        ->first();
+
+        $template = new TemplateProcessor(
+            storage_path('app/public/' . $templateFile->file_path)
+        );
+
+        // ===============================
+        // DATA (🔥 placeholder SAMA)
+        // ===============================
+        $data = [
+            'tahun_anggaran'   => $perjalanan->tahun_anggaran ?? date('Y'),
+            'beban_mak'        => $perjalanan->kode_mak ?? '-',
+
+            'jumlah_rupiah' => 'Rp' . number_format($sumTotal, 0, ',', '.'),
+            'terbilang'     => $this->terbilang($sumTotal),
+
+            'keperluan'     => $perjalanan->nama_kegiatan ?? '-',
+            'nomor_spd'     => $perjalanan->surat->nomor_st ?? '-',
+            'tanggal_spd'   => $perjalanan->surat->tanggal_st
+                ? Carbon::parse($perjalanan->surat->tanggal_st)->translatedFormat('d F Y')
+                : '-',
+
+            'tujuan'        => $perjalanan->tujuan_kota ?? '-',
+
+            // PERJALANAN
+            'nama_kegiatan'   => $perjalanan->nama_kegiatan ?? '-',
+            'alat_angkutan'   => $perjalanan->alat_angkutan ?? '-',
+            'dari_kota'       => $perjalanan->dari_kota ?? '-',
+            'tujuan_kota'     => $perjalanan->tujuan_kota ?? '-',
+            'tingkat_perjalanan' => $perjalanan->tingkat_perjalanan ?? '-',
+
+            // TANGGAL
+            'tanggal_mulai' => $tanggalMulai->translatedFormat('d F Y'),
+            'tanggal_akhir' => $tanggalAkhir->translatedFormat('d F Y'),
+            'lama_perjalanan' => $lamaPerjalanan . ' hari',
+
+            'tanggal_terima' => $perjalanan->tanggal_terima
+                ? Carbon::parse($perjalanan->tanggal_terima)->translatedFormat('d F Y')
+                : '-',
+
+            // 🔥 PENERIMA (NON PEGAWAI tapi placeholder sama)
+            'nama_penerima' => $np->nama,
+            'nip_penerima'  => $np->nik ?? '-',
+            'pangkat_golongan_penerima' => '-', // ga ada di nonpegawai
+            'jabatan_penerima' => $np->instansi ?? '-',
+
+            // Bendahara
+            'nama_bendahara' => $bendahara?->pegawai?->nama ?? '-',
+            'nip_bendahara'  => $bendahara?->pegawai?->nip ?? '-',
+
+            // PPK
+            'nama_ppk'       => $ppk?->pegawai?->nama ?? '-',
+            'nip_ppk'        => $ppk?->pegawai?->nip ?? '-',
+
+            'sum_total' => number_format($sumTotal, 0, ',', '.'),
+        ];
+
+        foreach ($data as $key => $value) {
+            $template->setValue($key, $value ?? '-');
+        }
+
+        // ===============================
+        // RINCIAN DINAMIS
+        // ===============================
+        $template->cloneRow('no', $rincian->count());
+
+        foreach ($rincian as $i => $r) {
+
+            $index = $i + 1;
+
+            $uraian = $r->uraian ?: $r->jenisBiaya->nama_biaya;
+
+            $volume = (int) $r->volume;
+
+            if ($r->volume && $r->tarif) {
+                $uraian .= " : {$volume} {$r->satuan} x Rp"
+                    . number_format($r->tarif, 0, ',', '.');
+            }
+
+            $template->setValue("no#{$index}", $index);
+            $template->setValue("uraian#{$index}", $uraian);
+            $template->setValue("jumlah#{$index}", 'Rp' . number_format($r->total, 0, ',', '.'));
+            $template->setValue("keterangan#{$index}", '-');
+        }
+
+        // ===============================
+        // FILE
+        // ===============================
+        $fileName = 'Kuitansi_NonPegawai_' 
+            . str_replace('/', '-', $perjalanan->surat->nomor_st ?? 'SPD') 
+            . '_' . $np->nama . '.docx';
+
+        $savePath = storage_path($fileName);
+
+        $template->saveAs($savePath);
+
+        return response()->download($savePath)->deleteFileAfterSend(true);
+    }
 
     private function terbilang($angka)
     {
@@ -497,5 +794,62 @@ class PerjadinController extends Controller
             return $this->terbilang($angka / 1000) . " Ribu" . $this->terbilang($angka % 1000);
         elseif ($angka < 1000000000)
             return $this->terbilang($angka / 1000000) . " Juta" . $this->terbilang($angka % 1000000);
+    }
+
+    public function destroy($id)
+    {
+        DB::beginTransaction();
+
+        try {
+            $perjalanan = PerjalananDinas::findOrFail($id);
+
+            // ===============================
+            // HAPUS RINCIAN PEGAWAI
+            // ===============================
+            foreach ($perjalanan->pegawaiPerjalanan as $pp) {
+                RincianBiaya::where('perjalanan_dinas_pegawai_id', $pp->id)->delete();
+            }
+
+            // ===============================
+            // HAPUS RINCIAN NON PEGAWAI
+            // ===============================
+            foreach ($perjalanan->nonpegawai as $np) {
+                RincianBiaya::where('nonpegawai_id', $np->id)->delete();
+            }
+
+            // ===============================
+            // HAPUS PEGAWAI (pivot)
+            // ===============================
+            $perjalanan->pegawaiPerjalanan()->delete();
+
+            // ===============================
+            // HAPUS NON PEGAWAI
+            // ===============================
+            $perjalanan->nonpegawai()->delete();
+
+            // ===============================
+            // HAPUS SURAT
+            // ===============================
+            if ($perjalanan->surat) {
+                $perjalanan->surat()->delete();
+            }
+
+            // ===============================
+            // HAPUS PERJALANAN
+            // ===============================
+            $perjalanan->delete();
+
+            DB::commit();
+
+            return redirect()
+                ->route('perjadin.index')
+                ->with('success', 'Data perjalanan dinas berhasil dihapus');
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return back()->with('error', $e->getMessage());
+        }
     }
 }
