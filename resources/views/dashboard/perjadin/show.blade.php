@@ -21,11 +21,24 @@
     font-weight: 600;
     color: #16a34a;
 }
+.header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 10px;
+}
 </style>
-<a href="{{ route('perjadin.export.nominatif',$perjalanan->id) }}"
-   class="btn btn-success">
-   Export Nominatif
-</a>
+
+{{-- ================= HEADER DENGAN TOMBOL EXPORT ================= --}}
+<div class="header-section">
+    <h4 class="mb-0 fw-semibold text-success">Detail Perjalanan Dinas</h4>
+    <a href="{{ route('perjadin.export.nominatif', $perjalanan->id) }}" 
+       class="btn btn-success">
+        <i class="fas fa-file-excel me-1"></i> Export Nominatif
+    </a>
+</div>
 
 {{-- ================= INFORMASI ================= --}}
 <div class="card card-shadow mb-4">
@@ -120,14 +133,16 @@
 
         <div class="accordion-body">
 
-            <a href="{{ route('perjadin.export.kuitansi', $pp->id) }}"
-               class="btn btn-sm btn-success mb-3">
-               Export Kuitansi dan SPD
-            </a>
-            <a href="{{ route('perjadin.export.sby', $pp->id) }}"
-            class="btn btn-sm btn-primary mb-3">
-            Export SBY
-            </a>
+            <div class="mb-3 d-flex gap-2">
+                <a href="{{ route('perjadin.export.kuitansi', $pp->id) }}"
+                   class="btn btn-sm btn-success">
+                   Export Kuitansi & SPD
+                </a>
+                <a href="{{ route('perjadin.export.sby', $pp->id) }}"
+                   class="btn btn-sm btn-primary">
+                   Export SBY
+                </a>
+            </div>
 
             <table class="table table-bordered">
                 <thead>
@@ -180,6 +195,5 @@
 
     </div>
 </div>
-
 
 @endsection

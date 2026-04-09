@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Exports\NominatifPerjalananExport;
 use App\Exports\SbyPenyimpanExport;
 use App\Models\JenisBiaya;
+use App\Models\NonPegawai;
 use App\Models\Pegawai;
 use App\Models\PejabatPeriode;
 use App\Models\PerjalananDinas;
 use App\Models\PerjalananDinasPegawai;
 use App\Models\RincianBiaya;
+// use App\Models\NonPegawai;
 use App\Models\SuratPerjalanan;
 use App\Models\Template;
 use Carbon\Carbon;
@@ -44,89 +46,135 @@ class PerjadinController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'tingkat_perjalanan' => 'nullable',
-            'alat_angkutan' => 'required',
-            'dari_kota' => 'required',
-            'tujuan_kota' => 'required',
-            'tanggal_mulai' => 'required|date',
-            'tanggal_akhir' => 'required|date|after_or_equal:tanggal_mulai',
-            'tanggal_terima' => 'required|date',
-            'pegawai' => 'required|array|min:1',
-            'rincian' => 'required|array',
-            'nomor_st' => 'required',
-            'tanggal_st' => 'required|date',
+{
+    // NonPegawai::Create 
+    // dd($request->all());
+    $request->validate([
+        'alat_angkutan' => 'required',
+        'dari_kota' => 'required',
+        'tujuan_kota' => 'required',
+        'tanggal_mulai' => 'required|date',
+        'tanggal_akhir' => 'required|date|after_or_equal:tanggal_mulai',
+        'tanggal_terima' => 'required|date',
+        'peserta' => 'required|array|min:1',
+        'nomor_st' => 'required',
+        'tanggal_st' => 'required|date',
+    ]);
+
+    DB::beginTransaction();
+
+    try {
+
+        // ===============================
+        // PERJALANAN DINAS
+        // ===============================
+        $perjalanan = PerjalananDinas::create([
+            'tingkat_perjalanan' => $request->tingkat_perjalanan,
+            'alat_angkutan'      => $request->alat_angkutan,
+            'dari_kota'          => $request->dari_kota,
+            'tujuan_kota'        => $request->tujuan_kota,
+            'tanggal_terima'     => $request->tanggal_terima,
+            'tanggal_mulai'      => $request->tanggal_mulai,
+            'tanggal_akhir'      => $request->tanggal_akhir,
+            'kode_mak'           => $request->kode_mak,
+            'akun_biaya'         => $request->akun_biaya,
+            'nama_kegiatan'      => $request->nama_kegiatan,
+            'created_by'         => Auth::id(),
         ]);
 
-        DB::beginTransaction();
+        SuratPerjalanan::create([
+            'perjalanan_dinas_id' => $perjalanan->id,
+            'nomor_sk'   => $request->nomor_sk,
+            'nomor_st'   => $request->nomor_st,
+            'tanggal_st' => $request->tanggal_st,
+        ]);
 
-        try {
+        // ===============================
+        // LOOP PESERTA (🔥 INI YG BARU)
+        // ===============================
+        foreach ($request->peserta as $pesertaKey => $peserta) {
 
-            // Simpan Perjalanan Dinas
-            $perjalanan = PerjalananDinas::create([
-                'tingkat_perjalanan' => $request->tingkat_perjalanan,
-                'alat_angkutan'      => $request->alat_angkutan,
-                'dari_kota'          => $request->dari_kota,
-                'tujuan_kota'        => $request->tujuan_kota,
-                'tanggal_terima'     => $request->tanggal_terima,
-                'tanggal_mulai'      => $request->tanggal_mulai,
-                'tanggal_akhir'      => $request->tanggal_akhir,
-                'kode_mak'           => $request->kode_mak,
-                'akun_biaya'         => $request->akun_biaya,
-                'nama_kegiatan'      => $request->nama_kegiatan,
-                'created_by'         => Auth::id(),
-            ]);
+            $tipe = explode('_', $pesertaKey)[0];
 
-            SuratPerjalanan::create([
-                'perjalanan_dinas_id' => $perjalanan->id,
-                'nomor_sk'   => $request->nomor_sk,
-                'nomor_st'   => $request->nomor_st,
-                'tanggal_st' => $request->tanggal_st,
-            ]);
+            // ======================
+            // PEGAWAI
+            // ======================
+            if ($tipe === 'pegawai') {
 
-            // Loop Pegawai
-            foreach ($request->pegawai as $pegawaiId) {
+                if (empty($peserta['pegawai_id'])) continue;
 
                 $pp = PerjalananDinasPegawai::create([
                     'perjalanan_dinas_id' => $perjalanan->id,
-                    'pegawai_id'          => $pegawaiId,
+                    'pegawai_id' => $peserta['pegawai_id'],
                 ]);
 
-                // Loop Rincian Biaya per Pegawai
-                if (isset($request->rincian[$pegawaiId])) {
+                if (isset($request->rincian[$pesertaKey])) {
+                    foreach ($request->rincian[$pesertaKey] as $r) {
 
-                    foreach ($request->rincian[$pegawaiId] as $rincian) {
-
-                        $volume = $rincian['volume'] ?? 0;
-                        $tarif  = $rincian['tarif'] ?? 0;
+                        $volume = $r['volume'] ?? 0;
+                        $tarif  = $r['tarif'] ?? 0;
 
                         RincianBiaya::create([
                             'perjalanan_dinas_pegawai_id' => $pp->id,
-                            'jenis_biaya_id' => $rincian['jenis_biaya_id'],
-                            'uraian' => $rincian['uraian'] ?? null,
-                            'volume' => $volume ?: 0,
-                            'satuan' => $rincian['satuan'] ?? '-',
-                            'tarif'  => $tarif ?: 0,
-                            'total'  => ($volume ?: 0) * ($tarif ?: 0),
+                            'nonpegawai_id' => null,
+                            'jenis_biaya_id' => $r['jenis_biaya_id'],
+                            'uraian' => $r['uraian'] ?? null,
+                            'volume' => $volume,
+                            'satuan' => $r['satuan'] ?? '-',
+                            'tarif'  => $tarif,
+                            'total'  => $volume * $tarif,
                         ]);
                     }
                 }
             }
 
-            DB::commit();
+            // ======================
+            // NON PEGAWAI
+            // ======================
+            if ($tipe === 'nonpegawai') {
+                
 
-            return redirect()
-                ->route('perjadin.index')
-                ->with('success', 'Perjalanan dinas berhasil disimpan');
+                if (empty($peserta['nama'])) continue;
 
-        } catch (\Exception $e) {
+                $np = NonPegawai::create([
+                    'perjalanan_dinas_id' => $perjalanan->id,
+                    'nama' => $peserta['nama'],
+                    'nik'  => $peserta['nik'] ?? null,
+                    'instansi' => $peserta['instansi'] ?? null,
+                ]);
 
-            DB::rollBack();
+                if (isset($request->rincian[$pesertaKey])) {
+                    foreach ($request->rincian[$pesertaKey] as $r) {
 
-            return back()->with('error', $e->getMessage());
+                        $volume = $r['volume'] ?? 0;
+                        $tarif  = $r['tarif'] ?? 0;
+
+                        RincianBiaya::create([
+                            'perjalanan_dinas_pegawai_id' => null,
+                            'nonpegawai_id' => $np->id,
+                            'jenis_biaya_id' => $r['jenis_biaya_id'],
+                            'uraian' => $r['uraian'] ?? null,
+                            'volume' => $volume,
+                            'satuan' => $r['satuan'] ?? '-',
+                            'tarif'  => $tarif,
+                            'total'  => $volume * $tarif,
+                        ]);
+                    }
+                }
+            }
         }
+
+        DB::commit();
+
+        return redirect()
+            ->route('perjadin.index')
+            ->with('success', 'Perjalanan dinas berhasil disimpan');
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return back()->with('error', $e->getMessage());
     }
+}
 
     public function show($id)
     {

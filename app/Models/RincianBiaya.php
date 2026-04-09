@@ -13,6 +13,7 @@ class RincianBiaya extends Model
 
     protected $fillable = [
         'perjalanan_dinas_pegawai_id',
+        'nonpegawai_id',
         'jenis_biaya_id',
         'uraian',
         'volume',
@@ -36,6 +37,11 @@ class RincianBiaya extends Model
     public function perjalananDinasPegawai()
     {
         return $this->belongsTo(PerjalananDinasPegawai::class);
+    }
+
+    public function nonpegawai()
+    {
+        return $this->belongsTo(NonPegawai::class, 'nonpegawai_id');
     }
 
     public function jenisBiaya()
