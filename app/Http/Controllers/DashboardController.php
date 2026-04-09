@@ -50,7 +50,7 @@ class DashboardController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        // Ambil pegawai dari users.pegawai_id 
+        // Ambil pegawai dari users.pegawai_id
         $pegawai = Pegawai::find($user->pegawai_id);
 
         // Jika akun belum terhubung ke pegawai
@@ -74,19 +74,16 @@ class DashboardController extends Controller
         $totalPotongan    = $potongan->total_potongan ?? 0;
         $totalBersih      = max(0, $totalPenghasilan - $totalPotongan);
 
-        // RIWAYAT BULAN SEBELUMNYA (selain bulan ini)
+        // ==================== REVISI RIWAYAT GAJI ====================
+        // Ambil SEMUA riwayat penghasilan (termasuk bulan ini)
+        // Urutkan dari bulan tertua ke terbaru (ASC = Januari dulu)
+        // Gunakan paginate(12) untuk 12 bulan per halaman
+        
         $riwayatGaji = Penghasilan::where('pegawai_id', $pegawai->id)
-            ->where(function ($q) use ($bulan) {
-                $q->whereYear('tanggal', '<', $bulan->year)
-                ->orWhere(function ($q2) use ($bulan) {
-                    $q2->whereYear('tanggal', $bulan->year)
-                        ->whereMonth('tanggal', '<', $bulan->month);
-                });
-            })
-            ->orderBy('tanggal', 'desc')
-            ->take(6) // tampil 6 bulan terakhir
-            ->get()
-            ->map(function ($item) {
+            ->orderBy('tanggal', 'asc')  // ASC = dari yang paling lama (Januari)
+            ->paginate(12)               // 12 per halaman
+            ->through(function ($item) {
+                // Ambil potongan pada bulan yang sama
                 $potongan = Potongan::where('pegawai_id', $item->pegawai_id)
                     ->whereMonth('tanggal', Carbon::parse($item->tanggal)->month)
                     ->whereYear('tanggal', Carbon::parse($item->tanggal)->year)
