@@ -107,7 +107,7 @@
     <div class="card mt-4 shadow-sm rounded-4">
         <div class="card-header bg-white border-0">
             <h5 class="fw-bold mb-0">Riwayat Penghasilan</h5>
-            <small class="text-muted">Beberapa bulan terakhir</small>
+            <small class="text-muted">12 bulan terakhir (dari Januari s/d Desember)</small>
         </div>
 
         <div class="card-body p-0">
@@ -137,13 +137,41 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-4">
+                                <td colspan="4" class="text-center text-muted py-4">
                                     Belum ada riwayat penghasilan
                                 </td>
                             </tr>
                         @endforelse
                     </tbody>
+                    @php
+                        $totalKeseluruhanPenghasilan = $riwayatGaji->sum('total_penghasilan');
+                        $totalKeseluruhanPotongan = $riwayatGaji->sum('total_potongan');
+                        $totalKeseluruhanGajiBersih = $riwayatGaji->sum('gaji_bersih');
+                    @endphp
+                    @if($riwayatGaji->count() > 0)
+                    <tfoot class="table-light fw-bold">
+                        <tr>
+                            <td class="fw-bold">TOTAL KESELURUHAN</td>
+                            <td class="text-success">
+                                Rp{{ number_format($totalKeseluruhanPenghasilan, 0, ',', '.') }}
+                            </td>
+                            <td class="text-danger">
+                                Rp{{ number_format($totalKeseluruhanPotongan, 0, ',', '.') }}
+                            </td>
+                            <td class="text-primary">
+                                Rp{{ number_format($totalKeseluruhanGajiBersih, 0, ',', '.') }}
+                            </td>
+                        </tr>
+                    </tfoot>
+                    @endif
                 </table>
+            </div>
+        </div>
+
+        {{-- PAGINATION 12 PER HALAMAN --}}
+        <div class="card-footer bg-white border-0 pt-0 pb-3">
+            <div class="d-flex justify-content-end">
+                {{ $riwayatGaji->links('pagination::bootstrap-5') }}
             </div>
         </div>
     </div>

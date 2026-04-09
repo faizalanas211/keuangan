@@ -172,7 +172,7 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
 
     Route::delete('penilaian/{id}', [PenilaianController::class, 'destroy'])
         ->name('penilaian.destroy');
-
+    Route::get('/slip-gaji/cetak-word/{pegawaiId}/{bulan}', [App\Http\Controllers\SlipGajiController::class, 'cetakWord'])->name('slip-gaji.cetak-word');
     /*
     |--------------------------------------------------------------------------
     | Fingerprint (ADMIN)
@@ -189,6 +189,9 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
 
     Route::get('sync-kehadiran', [FingerprintController::class, 'sync'])
         ->name('sync-kehadiran');
+    Route::get('/slip-gaji/cetak/{pegawaiId}/{bulan}', [App\Http\Controllers\SlipGajiController::class, 'cetak'])->name('slip-gaji.cetak');
+    Route::get('/slip-gaji/cetak-word/{pegawaiId}/{bulan}', [App\Http\Controllers\SlipGajiController::class, 'cetakWord'])->name('slip-gaji.cetak-word');
+    Route::get('/slip-gaji/cetak-pdf-dari-word/{pegawaiId}/{bulan}', [App\Http\Controllers\SlipGajiController::class, 'cetakPdfDariWord'])->name('slip-gaji.cetak-pdf-dari-word');
 
     /*
     |--------------------------------------------------------------------------

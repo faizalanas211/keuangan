@@ -46,6 +46,18 @@
     color: #fff;
 }
 
+.btn-outline-word {
+    border: 1px solid #2c7da0;
+    color: #1f5068;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.btn-outline-word:hover {
+    background: #2c7da0;
+    color: #fff;
+}
+
 .table thead th {
     font-size: 12px;
     letter-spacing: .08em;
@@ -71,6 +83,12 @@
 .total-bersih {
     color: #15803d;
     font-weight: 700;
+}
+
+.btn-group-aksi {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
 }
 </style>
 
@@ -145,24 +163,27 @@
                         <small class="text-muted">
                             {{ $row['pegawai']->nip }}
                         </small>
-                    </td>
+                     </td>
 
                     <td>{{ $row['periode'] }}</td>
 
                     <td class="text-end total-bersih">
                         Rp {{ number_format($row['bersih'], 0, ',', '.') }}
-                    </td>
+                     </td>
 
                     <td class="text-muted">
                         {{ \App\Helpers\Terbilang::convert($row['bersih']) }} rupiah
-                    </td>
+                     </td>
 
                     <td class="text-center">
-                        <a href="{{ route('slip-gaji.cetak', [$row['pegawai']->id, $row['bulan']]) }}"
-                           class="btn btn-sm btn-outline-green"
-                           title="Cetak Slip Gaji">
-                            <i class="bx bx-printer"></i>
-                        </a>
+                        <div class="btn-group-aksi">
+                            {{-- Tombol WORD --}}
+                            <a href="{{ route('slip-gaji.cetak-word', [$row['pegawai']->id, $row['bulan']]) }}"
+                               class="btn btn-sm btn-outline-word"
+                               title="Cetak Word">
+                                <i class="bx bxs-file-doc"></i> Word
+                            </a>
+                        </div>
                     </td>
                 </tr>
 
@@ -170,7 +191,7 @@
                 <tr>
                     <td colspan="6" class="text-center text-muted py-4">
                         Pilih pegawai dan periode untuk menampilkan slip gaji.
-                    </td>
+                     </td>
                 </tr>
                 @endforelse
             </tbody>
