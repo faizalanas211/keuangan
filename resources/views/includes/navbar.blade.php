@@ -34,10 +34,27 @@
     color:#166534;
     text-decoration:none;
 }
+
+.layout-menu-toggle:hover {
+    background: #dcfce7;
+}
+
+.layout-menu-toggle i {
+    font-size: 24px;
+    color: #166534;
+}
+
+/* Tombol toggle untuk desktop (akan ditampilkan) */
+.menu-toggle-desktop {
+    display: flex;
+    align-items: center;
+    margin-right: 16px;
+}
 </style>
 
+<!-- Tombol toggle untuk mobile -->
 <div class="layout-menu-toggle d-xl-none me-2">
-    <a href="javascript:void(0)">
+    <a href="javascript:void(0)" id="menuToggleMobile">
         <i class="bx bx-menu bx-sm"></i>
     </a>
 </div>
@@ -112,4 +129,5 @@ function updateDateTime() {
     document.getElementById('nav-date').innerText = tanggal;
 }
 updateDateTime();
+
 </script>

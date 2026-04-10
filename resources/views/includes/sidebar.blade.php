@@ -2,76 +2,226 @@
 
 <style>
 .premium-sidebar{
-    background:linear-gradient(180deg,#f0fdf4,#ffffff);
-    border-radius:0 28px 28px 0;
-    box-shadow:8px 0 28px rgba(16,185,129,.18);
+    background: linear-gradient(145deg, #064e3b 0%, #065f46 100%);
+    border-radius: 0 32px 32px 0;
+    box-shadow: 12px 0 32px rgba(0,0,0,.25);
     display:flex;
     flex-direction:column;
+    backdrop-filter: blur(2px);
 }
 
-/* MENU */
+/* MENU STYLE BARU - Glassmorphism + Neon */
 .premium-sidebar .menu-inner{
-    padding:0 14px;
+    padding: 0 16px;
     flex:1;
 }
 
 .premium-sidebar .menu-link{
-    border-radius:14px;
-    padding:11px 14px;
-    font-weight:500;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    color: #d1fae5 !important;
+    backdrop-filter: blur(4px);
 }
 
 .premium-sidebar .menu-item.active>.menu-link,
 .premium-sidebar .menu-link:hover{
-    background:linear-gradient(135deg,#22c55e,#16a34a);
-    color:#fff!important;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(16,185,129,0.4);
+    transform: translateX(4px);
+    letter-spacing: 0.3px;
 }
 
-/* PROFILE */
+.premium-sidebar .menu-item.active>.menu-link i,
+.premium-sidebar .menu-link:hover i {
+    text-shadow: 0 0 8px rgba(255,255,255,0.5);
+}
+
+/* Menu Header Style Baru */
+/* Perbaiki spacing menu header */
+.premium-sidebar .menu-header {
+    padding: 12px 16px 6px 16px;
+    color: #6ee7b7 !important;
+    letter-spacing: 1px;
+    font-weight: 600;
+    border-bottom: 1px dashed rgba(110,231,183,0.3);
+    margin-bottom: 8px;
+    margin-top: 8px;
+}
+
+/* Beri jarak antara border dan teks */
+.premium-sidebar .menu-header-text {
+    display: inline-block;
+    padding-bottom: 4px;
+}
+
+/* Atau alternatif: border-bottom dihilangkan */
+.premium-sidebar .menu-header {
+    border-bottom: none;
+    position: relative;
+    padding-left: 0;
+}
+
+.premium-sidebar .menu-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 16px;
+    right: 16px;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(110,231,183,0.3), rgba(110,231,183,0.1), transparent);
+}
+
+/* PROFILE SECTION - Style Baru dengan Card Effect */
 .sidebar-profile{
-    margin:14px;
-    padding:12px 14px;
-    border-radius:16px;
-    background:#ecfdf5;
-    border:1px solid #86efac;
+    margin: 16px;
+    padding: 14px 16px;
+    border-radius: 24px;
+    background: rgba(6, 78, 59, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(52, 211, 153, 0.4);
     display:flex;
     align-items:center;
     justify-content:space-between;
+    transition: all 0.3s ease;
+}
+
+.sidebar-profile:hover {
+    border-color: #34d399;
+    background: rgba(6, 78, 59, 0.85);
 }
 
 .profile-left{display:flex;align-items:center;gap:12px;}
 
 .profile-img{
-    width:42px;
+    width: 44px;
     aspect-ratio:1/1;
-    border-radius:50%;
+    border-radius: 50%;
     object-fit:cover;
     cursor:pointer;
+    border: 2px solid #34d399;
+    box-shadow: 0 0 12px rgba(52,211,153,0.3);
+    transition: transform 0.2s ease;
+}
+
+.profile-img:hover {
+    transform: scale(1.05);
 }
 
 .profile-img-lg{
-    width:90px;
+    width: 100px;
     aspect-ratio:1/1;
-    border-radius:50%;
+    border-radius: 50%;
     object-fit:cover;
+    border: 3px solid #10b981;
+    box-shadow: 0 0 20px rgba(16,185,129,0.4);
 }
 
 .logout-btn{
-    width:34px;height:34px;border-radius:10px;
-    background:#dcfce7;border:1px solid #86efac;
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    background: rgba(52, 211, 153, 0.2);
+    border: 1px solid rgba(52, 211, 153, 0.5);
+    color: #6ee7b7;
+    transition: all 0.2s ease;
 }
+
+.logout-btn:hover {
+    background: #059669;
+    color: white;
+    border-color: #059669;
+    transform: scale(1.05);
+}
+
+/* App Brand Style Baru */
+.app-brand {
+    border-bottom: 1px solid rgba(52, 211, 153, 0.3);
+    margin-bottom: 8px;
+}
+
+.app-brand .text-success {
+    background: linear-gradient(135deg, #34d399, #10b981);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+    text-shadow: none;
+}
+
+/* Icons Style */
+.menu-icon {
+    font-size: 1.3rem;
+    margin-right: 10px;
+}
+
+/* Scrollbar Styling */
+.premium-sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.premium-sidebar::-webkit-scrollbar-track {
+    background: rgba(110,231,183,0.1);
+    border-radius: 4px;
+}
+
+.premium-sidebar::-webkit-scrollbar-thumb {
+    background: #34d399;
+    border-radius: 4px;
+}
+
+/* Modal Style Update */
+.modal-content {
+    background: linear-gradient(145deg, #064e3b, #065f46);
+    border: 1px solid #34d399;
+    color: #d1fae5;
+}
+
+.modal-header {
+    border-bottom-color: rgba(52,211,153,0.3);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border: none;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
+}
+
+/* ========== PERBAIKAN: CSS KHUSUS UNTUK MODAL PROFILE ========== */
+/* Style ini hanya berlaku untuk form di dalam modal profile */
+#profileModal .form-control {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(52,211,153,0.3);
+    color: #d1fae5;
+}
+
+#profileModal .form-control:focus {
+    background: rgba(255,255,255,0.15);
+    border-color: #34d399;
+    box-shadow: 0 0 8px rgba(52,211,153,0.3);
+    color: #ffffff;
+}
+
+#profileModal .form-control::placeholder {
+    color: rgba(209,250,229,0.5);
+}
+
+/* Style untuk input di luar modal (halaman utama) akan tetap normal */
+/* Tidak perlu menambahkan CSS global .form-control lagi */
 </style>
 
 <div class="app-brand py-4 px-6 text-center">
     <div class="d-flex justify-content-center align-items-center gap-2">
-        <i class="bx bx-wallet text-success" style="font-size:32px;"></i>
+        <div class="bx bx-wallet" style="font-size: 36px; color: #34d399; filter: drop-shadow(0 0 6px #10b981);"></div>
         <div class="text-start">
-            <div class="fw-bold text-success" style="font-size:22px; line-height:1.2;">
+            <div class="fw-bold" style="font-size: 22px; line-height:1.2; background: linear-gradient(135deg, #6ee7b7, #34d399); -webkit-background-clip: text; background-clip: text; color: transparent;">
                 Slip Gaji
             </div>
-            <!-- <small class="text-muted" style="font-size:12px;">
-                Sistem Penggajian
-            </small> -->
         </div>
     </div>
 </div>
@@ -115,7 +265,7 @@
 
 <li class="menu-item {{ Request::is('dashboard/perjadin*')?'active':'' }}">
     <a href="{{ route('perjadin.index') }}" class="menu-link">
-        <i class="menu-icon bx bx-plus-circle"></i><div>Perjadin</div>
+        <i class="menu-icon bx bx-car"></i><div>Perjadin</div>
     </a>
 </li>
 
@@ -125,13 +275,13 @@
 
             <li class="menu-item {{ Request::is('dashboard/pegawai*') ? 'active' : '' }}">
                 <a href="{{ route('pegawai.index') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-user"></i>
+                    <i class="menu-icon bx bx-group"></i>
                     <div>Data Pegawai</div>
                 </a>
             </li>
             <li class="menu-item {{ Request::is('dashboard/pejabat*') ? 'active' : '' }}">
                 <a href="{{ route('pejabat.index') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-user"></i>
+                    <i class="menu-icon bx bx-briefcase-alt-2"></i>
                     <div>Data Pejabat</div>
                 </a>
             </li>
@@ -142,19 +292,18 @@
 
             <li class="menu-item {{ Request::is('dashboard/pengaturan*') ? 'active' : '' }}">
                 <a href="{{ route('template.index') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-user"></i>
+                    <i class="menu-icon bx bx-file"></i>
                     <div>Template Dokumen</div>
                 </a>
             </li>
             
-
 
 @endif
 
 @if(Auth::user()->role==='pegawai')
 
 <li class="menu-header small text-uppercase">
-<span class="menu-header-text">Gaji Saya</span>
+<span class="menu-header-text">📄 Gaji Saya</span>
 </li>
 
 <li class="menu-item {{ Request::is('dashboard/slip-gaji*')?'active':'' }}">
@@ -178,8 +327,8 @@ $pegawai = auth()->user()->pegawai;
      class="profile-img">
 
 <div>
-<div class="fw-bold">{{ Auth::user()->name }}</div>
-<div class="text-success small">{{ ucfirst(Auth::user()->role) }}</div>
+<div class="fw-bold" style="color: #d1fae5;">{{ Auth::user()->name }}</div>
+<div class="small" style="color: #34d399;">{{ ucfirst(Auth::user()->role) }}</div>
 </div>
 </div>
 
@@ -194,14 +343,14 @@ $pegawai = auth()->user()->pegawai;
 
 </aside>
 
-<!-- MODAL PROFILE -->
+<!-- MODAL PROFILE dengan tema gelap hijau -->
 <div class="modal fade" id="profileModal">
 <div class="modal-dialog modal-dialog-centered">
 <div class="modal-content">
 
 <div class="modal-header">
-<h5 class="modal-title">Profil Akun</h5>
-<button class="btn-close" data-bs-dismiss="modal"></button>
+<h5 class="modal-title" style="color: #6ee7b7;">Profil Akun</h5>
+<button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
 </div>
 
 <div class="modal-body text-center">
@@ -209,8 +358,8 @@ $pegawai = auth()->user()->pegawai;
 <img src="{{ $pegawai && $pegawai->foto ? asset('storage/'.$pegawai->foto) : asset('admin/img/avatars/1.png') }}"
      class="profile-img-lg mb-3">
 
-<h6>{{ Auth::user()->name }}</h6>
-<p class="text-muted mb-3">{{ ucfirst(Auth::user()->role) }}</p>
+<h6 style="color: #d1fae5;">{{ Auth::user()->name }}</h6>
+<p class="mb-3" style="color: #6ee7b7;">{{ ucfirst(Auth::user()->role) }}</p>
 
 <form method="POST" action="{{ route('password.update') }}">
 @csrf
@@ -223,12 +372,12 @@ $pegawai = auth()->user()->pegawai;
 <form action="{{ route('profile.photo.update') }}" method="POST" enctype="multipart/form-data">
 @csrf
 <input type="file" name="foto" class="form-control mb-2">
-<button class="btn btn-primary w-100 mb-3">Ganti Foto</button>
+<button class="btn btn-success w-100 mb-3" style="background: #059669;">Ganti Foto</button>
 </form>
 
 <form action="{{ route('logout') }}" method="POST">
 @csrf
-<button class="btn btn-outline-danger w-100">Logout</button>
+<button class="btn w-100" style="background: transparent; border: 1px solid #ef4444; color: #fca5a5;">Logout</button>
 </form>
 
 </div>

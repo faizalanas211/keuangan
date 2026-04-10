@@ -12,14 +12,26 @@
 @section('content')
 
 <style>
-.btn-green{
-    background:linear-gradient(135deg,#22c55e,#16a34a);
-    border:none;
-    color:#fff;
-    font-weight:600;
+.btn-green {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border: none;
+    color: #fff;
+    font-weight: 600;
+    border-radius: 12px;
+    padding: 10px 18px;
+    box-shadow: 0 8px 20px rgba(22, 163, 74, .35);
 }
-.btn-green:hover{
-    background:linear-gradient(135deg,#16a34a,#15803d);
+
+.btn-green:hover {
+    opacity: .9;
+    color: #fff;
+}
+
+.btn-soft-green {
+    background: #ecfdf5;
+    color: #166534;
+    border-radius: 12px;
+    font-weight: 500;
 }
 .card-shadow{
     border:none;

@@ -8,6 +8,7 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithCustomStartCell;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
@@ -40,15 +41,21 @@ public function __construct($perjalanan)
             ->flatMap(fn($np) => $np->rincian)
     )
 
-    ->map(function ($r) {
+    ->groupBy('jenis_biaya_id')
+    ->map(function ($items) {
+
+        $first = $items->first();
+
         return [
-            'jenis_id' => $r->jenis_biaya_id,
-            'uraian'   => $r->uraian ?? '-',
-            'label'    => strtoupper($r->uraian ?? '-'),
-            'satuan'   => $r->satuan ?? 'VOL',
+            'jenis_id' => $first->jenis_biaya_id,
+            'label'    => strtoupper($first->jenisBiaya->nama_biaya),
+            'is_transport' => str_contains(
+                strtolower($first->jenisBiaya->nama_biaya),
+                'transport'
+            ),
+            'satuan' => $first->satuan ?? 'VOL', 
         ];
     })
-    ->unique(fn($item) => $item['jenis_id'].'-'.$item['uraian'])
     ->values();
 }
 
@@ -84,21 +91,39 @@ public function __construct($perjalanan)
 
         foreach ($this->columns as $col) {
 
-            $r = $pp->rincian->first(function ($item) use ($col) {
-                return $item->jenis_biaya_id == $col['jenis_id']
-                    && ($item->uraian ?? '-') == $col['uraian'];
-            });
+            $items = $pp->rincian->where('jenis_biaya_id', $col['jenis_id']);
 
-            if ($r) {
-                $row[] = (int) $r->volume;
-                $row[] = $r->tarif;
-                $row[] = $r->total;
+            if ($items->isNotEmpty()) {
 
-                $totalAll += $r->total ?? 0;
+                if ($col['is_transport']) {
+                    // 🔥 transport → langsung total
+                    $total = $items->sum('total');
+
+                    $row[] = $total;
+                    $totalAll += $total;
+
+                } else {
+                    // 🔥 selain transport
+                    $volume = $items->sum('volume');
+                    $tarif  = $items->avg('tarif');
+                    $total  = $items->sum('total');
+
+                    $row[] = $volume ?: '-';
+                    $row[] = $tarif ?: '-';
+                    $row[] = $total ?: '-';
+
+                    $totalAll += $total;
+                }
+
             } else {
-                $row[] = '-';
-                $row[] = '-';
-                $row[] = '-';
+
+                if ($col['is_transport']) {
+                    $row[] = '-';
+                } else {
+                    $row[] = '-';
+                    $row[] = '-';
+                    $row[] = '-';
+                }
             }
         }
 
@@ -226,54 +251,62 @@ public function __construct($perjalanan)
 
     foreach ($this->columns as $col) {
 
-        $start = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
-        $end   = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 2);
+        $start = Coordinate::stringFromColumnIndex($colIndex);
 
-        // header utama
-        $sheet->mergeCells("$start"."3:$end"."3");
-        $sheet->setCellValue("$start"."3", $col['label']);
+        if ($col['is_transport']) {
 
-        // subheader
-        $sheet->setCellValue("$start"."4", strtoupper($col['satuan']));
-        $sheet->setCellValue(
-            \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1).'4',
-            'TARIF'
-        );
-        $sheet->setCellValue(
-            \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 2).'4',
-            'JUMLAH'
-        );
+    // ✅ HEADER UTAMA
+    $sheet->setCellValue("$start"."3", $col['label']); // misal: UANG TRANSPORT
 
-        $colIndex += 3;
+    // ✅ SUBHEADER (baris 4)
+    $sheet->setCellValue(
+        "$start"."4",
+        strtoupper($this->perjalanan->alat_angkutan ?? 'TRANSPORT')
+    );
+
+    $colIndex += 1;
+} else {
+
+            $end = Coordinate::stringFromColumnIndex($colIndex + 2);
+
+            $sheet->mergeCells("$start"."3:$end"."3");
+            $sheet->setCellValue("$start"."3", $col['label']);
+
+            $sheet->setCellValue("$start"."4", strtoupper($col['satuan'] ?? 'VOL'));
+            $sheet->setCellValue(Coordinate::stringFromColumnIndex($colIndex + 1).'4', 'TARIF');
+            $sheet->setCellValue(Coordinate::stringFromColumnIndex($colIndex + 2).'4', 'JUMLAH');
+
+            $colIndex += 3;
+        }
     }
 
     // ===== JUMLAH DIBAYAR =====
-$jumlahCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
+    $jumlahCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
 
-$sheet->mergeCells("{$jumlahCol}3:{$jumlahCol}4");
-$sheet->setCellValue("{$jumlahCol}3", 'JUMLAH DIBAYAR');
+    $sheet->mergeCells("{$jumlahCol}3:{$jumlahCol}4");
+    $sheet->setCellValue("{$jumlahCol}3", 'JUMLAH DIBAYAR');
 
-$colIndex++; // 🔥 pindah kolom!
+    $colIndex++; // 🔥 pindah kolom!
 
-// ===== TANDA TANGAN =====
-$ttdCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
+    // ===== TANDA TANGAN =====
+    $ttdCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
 
-$sheet->mergeCells("{$ttdCol}3:{$ttdCol}4");
-$sheet->setCellValue("{$ttdCol}3", 'TANDA TANGAN');
+    $sheet->mergeCells("{$ttdCol}3:{$ttdCol}4");
+    $sheet->setCellValue("{$ttdCol}3", 'TANDA TANGAN');
 
-$colIndex++; // 🔥 pindah lagi
+    $colIndex++; // 🔥 pindah lagi
 
-// ===== KETERANGAN =====
-$ketCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
+    // ===== KETERANGAN =====
+    $ketCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
 
-$sheet->mergeCells("{$ketCol}3:{$ketCol}4");
-$sheet->setCellValue("{$ketCol}3", 'KET.');
+    $sheet->mergeCells("{$ketCol}3:{$ketCol}4");
+    $sheet->setCellValue("{$ketCol}3", 'KET.');
 
-// STYLE
-$sheet->getStyle("A3:{$ketCol}4")->getAlignment()
-    ->setHorizontal(Alignment::HORIZONTAL_CENTER)
-    ->setVertical(Alignment::VERTICAL_CENTER);
-}
+    // STYLE
+    $sheet->getStyle("A3:{$ketCol}4")->getAlignment()
+        ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+        ->setVertical(Alignment::VERTICAL_CENTER);
+    }
 
     private function applyColumnWidth($sheet)
     {
@@ -281,7 +314,7 @@ $sheet->getStyle("A3:{$ketCol}4")->getAlignment()
         $sheet->getColumnDimension('B')->setWidth(28); // nama agak lebar
         $sheet->getColumnDimension('C')->setWidth(10);
         $sheet->getColumnDimension('D')->setWidth(10);
-        $sheet->getColumnDimension('E')->setWidth(10);
+        $sheet->getColumnDimension('E')->setWidth(20);
 
         // kolom dinamis
         $lastCol = $sheet->getHighestColumn();
@@ -289,7 +322,7 @@ $sheet->getStyle("A3:{$ketCol}4")->getAlignment()
 
         for ($i = 6; $i <= $lastIndex; $i++) {
             $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i);
-            $sheet->getColumnDimension($col)->setWidth(10);
+            $sheet->getColumnDimension($col)->setWidth(15);
         }
     }
 
@@ -321,36 +354,59 @@ $sheet->getStyle("A3:{$ketCol}4")->getAlignment()
     $sheet->mergeCells("A{$totalRow}:E{$totalRow}");
     $sheet->setCellValue("A{$totalRow}", "JUMLAH");
 
-    $colIndex = 6; // mulai dari F
+    $colIndex = 6;
 
-    foreach ($this->columns as $col) {
+foreach ($this->columns as $col) {
 
-    $volCol   = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
-    $tarifCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1);
-    $jumlahCol= \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 2);
+    if ($col['is_transport']) {
 
-    // TOTAL kolom jumlah
-    $sheet->setCellValue(
-        "{$jumlahCol}{$totalRow}",
-        "=IF(COUNT({$jumlahCol}5:{$jumlahCol}{$lastRow})=0,\"-\",SUM({$jumlahCol}5:{$jumlahCol}{$lastRow}))"
-    );
+        $colLetter = Coordinate::stringFromColumnIndex($colIndex);
 
-    // WARNA ABU UNTUK VOL & TARIF
-    $sheet->getStyle("{$volCol}{$totalRow}:{$tarifCol}{$totalRow}")
-        ->getFill()
-        ->setFillType(Fill::FILL_SOLID)
-        ->getStartColor()->setARGB('FFBFBFBF');
+        // ✅ TOTAL TRANSPORT
+        $sheet->setCellValue(
+            "{$colLetter}{$totalRow}",
+            "=IF(COUNT({$colLetter}5:{$colLetter}{$lastRow})=0,\"-\",SUM({$colLetter}5:{$colLetter}{$lastRow}))"
+        );
 
-    $colIndex += 3;
+        $colIndex += 1;
 
-    // kolom tanda tangan (setelah jumlah dibayar)
-    $ttdCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1);
+    } else {
 
-    $sheet->getStyle("{$ttdCol}{$totalRow}")
-        ->getFill()
-        ->setFillType(Fill::FILL_SOLID)
-        ->getStartColor()->setARGB('FFBFBFBF');
+        $volCol   = Coordinate::stringFromColumnIndex($colIndex);
+        $tarifCol = Coordinate::stringFromColumnIndex($colIndex + 1);
+        $jumlahCol= Coordinate::stringFromColumnIndex($colIndex + 2);
+
+        // ✅ TOTAL JUMLAH
+        $sheet->setCellValue(
+            "{$jumlahCol}{$totalRow}",
+            "=IF(COUNT({$jumlahCol}5:{$jumlahCol}{$lastRow})=0,\"-\",SUM({$jumlahCol}5:{$jumlahCol}{$lastRow}))"
+        );
+
+        // ✅ ABUIN VOL & TARIF
+        $sheet->getStyle("{$volCol}{$totalRow}:{$tarifCol}{$totalRow}")
+            ->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFBFBFBF');
+
+        $colIndex += 3;
+    }
 }
+
+
+// ===== TOTAL DIBAYAR =====
+$jumlahDibayarCol = Coordinate::stringFromColumnIndex($colIndex);
+
+$sheet->setCellValue(
+    "{$jumlahDibayarCol}{$totalRow}",
+    "=IF(COUNT({$jumlahDibayarCol}5:{$jumlahDibayarCol}{$lastRow})=0,\"-\",SUM({$jumlahDibayarCol}5:{$jumlahDibayarCol}{$lastRow}))"
+);
+
+// abuin tanda tangan
+$ttdCol = Coordinate::stringFromColumnIndex($colIndex + 1);
+$sheet->getStyle("{$ttdCol}{$totalRow}")
+    ->getFill()
+    ->setFillType(Fill::FILL_SOLID)
+    ->getStartColor()->setARGB('FFBFBFBF');
 
     // ===== TOTAL DIBAYAR (kolom terakhir) =====
     $lastCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
@@ -363,6 +419,8 @@ $sheet->getStyle("A3:{$ketCol}4")->getAlignment()
     // bold
     $sheet->getStyle("A{$totalRow}:{$lastCol}{$totalRow}")
         ->getFont()->setBold(false);
+
+    $sheet->getRowDimension($totalRow)->setRowHeight(40);
 }
 
     private function applyAlignment($sheet, $totalRow)
