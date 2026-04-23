@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\NominatifPerjalananExport;
 use App\Exports\SbyPenyimpanExport;
 use App\Models\JenisBiaya;
+use App\Models\KelompokPerjalanan;
 use App\Models\NonPegawai;
 use App\Models\Pegawai;
 use App\Models\PejabatPeriode;
@@ -47,6 +48,7 @@ class PerjadinController extends Controller
 
     public function store(Request $request)
 {
+    // dd($request->all());
     // NonPegawai::Create 
     // dd($request->all());
     $request->validate([
@@ -57,8 +59,9 @@ class PerjadinController extends Controller
         'tanggal_akhir' => 'required|date|after_or_equal:tanggal_mulai',
         'tanggal_terima' => 'required|date',
         'peserta' => 'required|array|min:1',
-        'nomor_st' => 'required',
-        'tanggal_st' => 'required|date',
+        'kelompok' => 'nullable|array',
+        'kelompok.*.nomor_st' => 'nullable|string',
+        'kelompok.*.tanggal_st' => 'nullable|date',
     ]);
 
     DB::beginTransaction();
@@ -82,83 +85,100 @@ class PerjadinController extends Controller
             'created_by'         => Auth::id(),
         ]);
 
-        SuratPerjalanan::create([
-            'perjalanan_dinas_id' => $perjalanan->id,
-            'nomor_sk'   => $request->nomor_sk,
-            'nomor_st'   => $request->nomor_st,
-            'tanggal_st' => $request->tanggal_st,
-        ]);
+        // SuratPerjalanan::create([
+        //     'perjalanan_dinas_id' => $perjalanan->id,
+        //     'nomor_sk'   => $request->nomor_sk,
+        //     'nomor_st' => $request->kelompok[$kelompok]['nomor_st'] ?? null,
+        //     'tanggal_st' => $request->kelompok[$kelompok]['tanggal_st'] ?? null,
+        // ]);
 
         // ===============================
-        // LOOP PESERTA 
+        // LOOP KELOMPOK
         // ===============================
-        foreach ($request->peserta as $pesertaKey => $peserta) {
+        foreach ($request->peserta as $kelompok => $listPeserta) {
 
-            $tipe = explode('_', $pesertaKey)[0];
+            // ===============================
+            // SIMPAN KELOMPOK 
+            // ===============================
+            $kelompokModel = KelompokPerjalanan::create([
+                'perjalanan_dinas_id' => $perjalanan->id,
+                'nama_kelompok' => ucfirst($kelompok),
+                'nomor_st' => $request->kelompok[$kelompok]['nomor_st'] ?? null,
+                'tanggal_st' => $request->kelompok[$kelompok]['tanggal_st'] ?? null,
+            ]);
 
-            // ======================
-            // PEGAWAI
-            // ======================
-            if ($tipe === 'pegawai') {
+            // ===============================
+            // LOOP PESERTA DI DALAM KELOMPOK
+            // ===============================
+            foreach ($listPeserta as $pesertaId => $peserta) {
 
-                if (empty($peserta['pegawai_id'])) continue;
+                $tipe = isset($peserta['pegawai_id']) ? 'pegawai' : 'nonpegawai';
 
-                $pp = PerjalananDinasPegawai::create([
-                    'perjalanan_dinas_id' => $perjalanan->id,
-                    'pegawai_id' => $peserta['pegawai_id'],
-                ]);
+                // ================= PEGAWAI =================
+                if ($tipe === 'pegawai') {
 
-                if (isset($request->rincian[$pesertaKey])) {
-                    foreach ($request->rincian[$pesertaKey] as $r) {
+                    if (empty($peserta['pegawai_id'])) continue;
 
-                        $volume = $r['volume'] ?? 0;
-                        $tarif  = $r['tarif'] ?? 0;
+                    $pp = PerjalananDinasPegawai::create([
+                        'perjalanan_dinas_id' => $perjalanan->id,
+                        'pegawai_id' => $peserta['pegawai_id'],
+                        'kelompok_id' => $kelompokModel->id,
+                    ]);
 
-                        RincianBiaya::create([
-                            'perjalanan_dinas_pegawai_id' => $pp->id,
-                            'nonpegawai_id' => null,
-                            'jenis_biaya_id' => $r['jenis_biaya_id'],
-                            'uraian' => $r['uraian'] ?? null,
-                            'volume' => $volume,
-                            'satuan' => $r['satuan'] ?? '-',
-                            'tarif'  => $tarif,
-                            'total'  => $volume * $tarif,
-                        ]);
+                    if (isset($request->rincian[$kelompok][$pesertaId])) {
+                        foreach ($request->rincian[$kelompok][$pesertaId] as $r) {
+
+                            if (empty($r['jenis_biaya_id'])) continue;
+
+                            $volume = $r['volume'] ?? 0;
+                            $tarif  = $r['tarif'] ?? 0;
+
+                            RincianBiaya::create([
+                                'perjalanan_dinas_pegawai_id' => $pp->id,
+                                'nonpegawai_id' => null,
+                                'jenis_biaya_id' => $r['jenis_biaya_id'],
+                                'uraian' => $r['uraian'] ?? null,
+                                'volume' => $volume,
+                                'satuan' => $r['satuan'] ?? '-',
+                                'tarif'  => $tarif,
+                                'total'  => $volume * $tarif,
+                            ]);
+                        }
                     }
                 }
-            }
 
-            // ======================
-            // NON PEGAWAI
-            // ======================
-            if ($tipe === 'nonpegawai') {
-                
+                // ================= NON PEGAWAI =================
+                if ($tipe === 'nonpegawai') {
 
-                if (empty($peserta['nama'])) continue;
+                    if (empty($peserta['nama'])) continue;
 
-                $np = NonPegawai::create([
-                    'perjalanan_dinas_id' => $perjalanan->id,
-                    'nama' => $peserta['nama'],
-                    'nik'  => $peserta['nik'] ?? null,
-                    'instansi' => $peserta['instansi'] ?? null,
-                ]);
+                    $np = NonPegawai::create([
+                        'perjalanan_dinas_id' => $perjalanan->id,
+                        'nama' => $peserta['nama'],
+                        'nik'  => $peserta['nik'] ?? null,
+                        'instansi' => $peserta['instansi'] ?? null,
+                        'kelompok_id' => $kelompokModel->id,
+                    ]);
 
-                if (isset($request->rincian[$pesertaKey])) {
-                    foreach ($request->rincian[$pesertaKey] as $r) {
+                    if (isset($request->rincian[$kelompok][$pesertaId])) {
+                        foreach ($request->rincian[$kelompok][$pesertaId] as $r) {
 
-                        $volume = $r['volume'] ?? 0;
-                        $tarif  = $r['tarif'] ?? 0;
+                            if (empty($r['jenis_biaya_id'])) continue;
 
-                        RincianBiaya::create([
-                            'perjalanan_dinas_pegawai_id' => null,
-                            'nonpegawai_id' => $np->id,
-                            'jenis_biaya_id' => $r['jenis_biaya_id'],
-                            'uraian' => $r['uraian'] ?? null,
-                            'volume' => $volume,
-                            'satuan' => $r['satuan'] ?? '-',
-                            'tarif'  => $tarif,
-                            'total'  => $volume * $tarif,
-                        ]);
+                            $volume = $r['volume'] ?? 0;
+                            $tarif  = $r['tarif'] ?? 0;
+
+                            RincianBiaya::create([
+                                'perjalanan_dinas_pegawai_id' => null,
+                                'nonpegawai_id' => $np->id,
+                                'jenis_biaya_id' => $r['jenis_biaya_id'],
+                                'uraian' => $r['uraian'] ?? null,
+                                'volume' => $volume,
+                                'satuan' => $r['satuan'] ?? '-',
+                                'tarif'  => $tarif,
+                                'total'  => $volume * $tarif,
+                            ]);
+                        }
                     }
                 }
             }

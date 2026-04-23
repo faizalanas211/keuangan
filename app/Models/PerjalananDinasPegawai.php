@@ -14,6 +14,7 @@ class PerjalananDinasPegawai extends Model
     protected $fillable = [
         'perjalanan_dinas_id',
         'pegawai_id',
+        'kelompok_id',
     ];
 
     /*

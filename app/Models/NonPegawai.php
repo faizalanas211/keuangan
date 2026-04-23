@@ -14,6 +14,7 @@ class NonPegawai extends Model
         'nama',
         'nik',
         'instansi',
+        'kelompok_id',
     ];
 
     // ===============================

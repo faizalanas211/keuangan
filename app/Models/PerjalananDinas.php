@@ -67,4 +67,8 @@ class PerjalananDinas extends Model
         return $this->hasMany(PerjalananDinasPegawai::class);
     }
 
+    public function kelompokPerjalanan()
+    {
+        return $this->hasMany(KelompokPerjalanan::class);
+    }
 }

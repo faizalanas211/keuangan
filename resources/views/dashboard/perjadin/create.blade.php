@@ -93,51 +93,48 @@
     </div>
 </div>
 
-{{-- ================= SURAT PERJALANAN ================= --}}
+{{-- ================= PESERTA (TAB KELOMPOK) ================= --}}
 <div class="card card-shadow mb-4">
     <div class="card-body">
-        <h5 class="section-title mb-3">Surat Perjalanan</h5>
 
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label>Tanggal ST <span class="text-danger">*</span></label>
-                <input type="date" name="tanggal_st" class="form-control" required>
-            </div>
-            <div class="col-md-6">
-                <label>Nomor ST <span class="text-danger">*</span></label>
-                <input type="text" name="nomor_st" class="form-control" required>
-            </div>
-        </div>
+        <h5 class="section-title mb-3">Peserta Perjalanan</h5>
 
-        <div class="mb-3">
-            <label>Nomor SK</label>
-            <input type="text" name="nomor_sk" class="form-control">
-        </div>
-    </div>
-</div>
-
-{{-- ================= PESERTA (PEGAWAI + NON PEGAWAI) ================= --}}
-<div class="card card-shadow mb-4">
-    <div class="card-body">
-        
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="section-title mb-0">Peserta Perjalanan</h5>
-            <div>
-                <button type="button" class="btn btn-outline-primary btn-sm me-2" onclick="addPegawaiRow()">
-                    + Tambah Pegawai
+        {{-- NAV TAB --}}
+        <ul class="nav nav-tabs mb-3">
+            <li class="nav-item">
+                <button type="button" class="nav-link active" data-bs-toggle="tab" data-bs-target="#panitia">
+                    Panitia
                 </button>
-                <button type="button" class="btn btn-outline-success btn-sm me-2" onclick="addNonPegawaiRow()">
-                    + Tambah Non-Pegawai
+            </li>
+            <li class="nav-item">
+                <button type="button" class="nav-link" data-bs-toggle="tab" data-bs-target="#peserta">
+                    Peserta
                 </button>
-                <button type="button" class="btn btn-outline-info btn-sm" onclick="copyToAllPeserta()" id="btnCopyToAll" style="display: none;">
-                    📋 Copy ke Semua Peserta
+            </li>
+            <li class="nav-item">
+                <button type="button" class="nav-link" data-bs-toggle="tab" data-bs-target="#narasumber">
+                    Narasumber
                 </button>
-            </div>
-        </div>
+            </li>
+        </ul>
 
-        <div id="pesertaContainer">
-            {{-- Pegawai akan ditambahkan via JS --}}
-            {{-- Non-pegawai akan ditambahkan via JS --}}
+        <div class="tab-content">
+
+            {{-- ================= PANITIA ================= --}}
+            <div class="tab-pane fade show active" id="panitia">
+                @include('dashboard.perjadin.partials.kelompok', ['key' => 'panitia', 'label' => 'Panitia', 'tipe' => 'pegawai'])
+            </div>
+
+            {{-- ================= PESERTA ================= --}}
+            <div class="tab-pane fade" id="peserta">
+                @include('dashboard.perjadin.partials.kelompok', ['key' => 'peserta', 'label' => 'Peserta', 'tipe' => 'pegawai'])
+            </div>
+
+            {{-- ================= NARASUMBER ================= --}}
+            <div class="tab-pane fade" id="narasumber">
+                @include('dashboard.perjadin.partials.kelompok', ['key' => 'narasumber', 'label' => 'Narasumber', 'tipe' => 'nonpegawai'])
+            </div>
+
         </div>
 
     </div>
@@ -150,288 +147,262 @@
 </form>
 
 <script>
-    const jenisBiayaData = @json($jenisBiaya);
-    const pegawaiData = @json($pegawai);
-    let pesertaCounter = 0;
+const jenisBiayaData = @json($jenisBiaya);
+const pegawaiData = @json($pegawai);
+let pesertaCounter = 0;
 
-    document.addEventListener("DOMContentLoaded", function () {
-        // Default tambah 1 baris pegawai
-        addPegawaiRow();
+function getJumlahHari() {
+    const mulai = document.getElementById('tanggal_mulai').value;
+    const akhir = document.getElementById('tanggal_akhir').value;
+    if (!mulai || !akhir) return 0;
+    const selisih = (new Date(akhir) - new Date(mulai)) / (1000 * 60 * 60 * 24);
+    return selisih >= 0 ? selisih + 1 : 0;
+}
+
+function addPegawaiRow(kelompok) {
+    const container = document.getElementById(`container-${kelompok}`);
+    const pesertaId = `${kelompok}_${Date.now()}_${pesertaCounter++}`;
+
+    let options = '<option value="">Pilih Pegawai</option>';
+    pegawaiData.forEach(p => {
+        options += `<option value="${p.id}">${p.nama} (${p.nip})</option>`;
     });
 
-    function getJumlahHari() {
-        const mulai = document.getElementById('tanggal_mulai').value;
-        const akhir = document.getElementById('tanggal_akhir').value;
-        if (!mulai || !akhir) return 0;
-        const tglMulai = new Date(mulai);
-        const tglAkhir = new Date(akhir);
-        const selisih = (tglAkhir - tglMulai) / (1000 * 60 * 60 * 24);
-        return selisih >= 0 ? selisih + 1 : 0;
-    }
-
-    // Function untuk mengecek dan menampilkan/sembunyikan tombol Copy to All
-    function toggleCopyToAllButton() {
-        const container = document.getElementById('pesertaContainer');
-        const pesertaCards = container.querySelectorAll('.peserta-card');
-        const btnCopyToAll = document.getElementById('btnCopyToAll');
-        
-        if (btnCopyToAll) {
-            btnCopyToAll.style.display = pesertaCards.length >= 2 ? 'inline-flex' : 'none';
-        }
-    }
-
-    // Function untuk menyalin rincian dari peserta pertama ke semua peserta
-    function copyToAllPeserta() {
-        const container = document.getElementById('pesertaContainer');
-        const pesertaCards = container.querySelectorAll('.peserta-card');
-        
-        if (pesertaCards.length < 2) {
-            alert('Minimal ada 2 peserta untuk melakukan copy');
-            return;
-        }
-        
-        // Ambil peserta pertama sebagai sumber
-        const firstPeserta = pesertaCards[0];
-        const firstTbody = firstPeserta.querySelector('tbody');
-        
-        if (!firstTbody || firstTbody.querySelectorAll('tr').length === 0) {
-            alert('Peserta pertama belum memiliki rincian biaya. Silakan tambah rincian terlebih dahulu.');
-            return;
-        }
-        
-        const firstRows = firstTbody.querySelectorAll('tr');
-        let copiedCount = 0;
-        
-        // Loop mulai dari peserta ke-2 (indeks 1)
-        for (let i = 1; i < pesertaCards.length; i++) {
-            const targetPeserta = pesertaCards[i];
-            const targetTbody = targetPeserta.querySelector('tbody');
-            const targetPesertaId = targetPeserta.getAttribute('data-peserta-id');
-            
-            if (!targetTbody) continue;
-            
-            // Kosongkan tbody target terlebih dahulu
-            targetTbody.innerHTML = '';
-            
-            // Clone setiap row dari peserta pertama
-            firstRows.forEach(row => {
-                const cloneRow = row.cloneNode(true);
-                
-                // Update semua name attribute dengan pesertaId target
-                const allInputsSelects = cloneRow.querySelectorAll('input, select');
-                allInputsSelects.forEach(field => {
-                    const name = field.getAttribute('name');
-                    if (name) {
-                        // Ganti pesertaId di name attribute: rincian[LAMA][index][field] -> rincian[BARU][index][field]
-                        const newName = name.replace(/rincian\[[^\]]+\]/, `rincian[${targetPesertaId}]`);
-                        field.setAttribute('name', newName);
-                    }
-                });
-                
-                targetTbody.appendChild(cloneRow);
-            });
-            
-            copiedCount++;
-        }
-        
-        alert(`Berhasil menyalin rincian ke ${copiedCount} peserta lainnya.`);
-    }
-
-    function addPegawaiRow() {
-        const container = document.getElementById('pesertaContainer');
-        const pesertaId = `pegawai_${Date.now()}_${pesertaCounter++}`;
-        
-        let pegawaiOptions = '<option value="">Pilih Pegawai</option>';
-        pegawaiData.forEach(p => {
-            pegawaiOptions += `<option value="${p.id}">${p.nama} - ${p.jabatan} (${p.nip})</option>`;
-        });
-
-        container.insertAdjacentHTML('beforeend', `
-            <div class="peserta-card border rounded p-3 mb-3" data-peserta-id="${pesertaId}" data-tipe="pegawai">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <h6 class="fw-bold text-primary mb-0">👤 PPeserta: Pegawai</h6>
-                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePeserta(this)">Hapus</button>
-                </div>
-                
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label>Pilih Pegawai <span class="text-danger">*</span></label>
-                        <select name="peserta[${pesertaId}][pegawai_id]" class="form-select" required>
-                            ${pegawaiOptions}
-                        </select>
-                    </div>
-                </div>
-
-                <div class="d-flex gap-2 mb-2">
-                    <button type="button" class="btn btn-sm btn-outline-success" onclick="addRincianToPeserta('${pesertaId}')">
-                        + Tambah Rincian Biaya
-                    </button>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-bordered" style="min-width: 1000px;">
-                        <thead>
-                            <tr><th>Jenis</th><th>Uraian</th><th>Volume</th><th>Satuan</th><th>Tarif</th><th>Total</th><th>Aksi</th></tr>
-                        </thead>
-                        <tbody id="tbody-${pesertaId}"></tbody>
-                    </table>
-                </div>
+    container.insertAdjacentHTML('beforeend', `
+        <div class="peserta-card card mb-3 border" data-peserta-id="${pesertaId}">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <strong class="text-primary">
+                    <i class="bi bi-person-badge me-1"></i> ${kelompok.toUpperCase()} - Pegawai
+                </strong>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.peserta-card').remove()">
+                    <i class="bi bi-trash me-1"></i> Hapus
+                </button>
             </div>
-        `);
-        
-        toggleCopyToAllButton();
-    }
-
-    function addNonPegawaiRow() {
-        const container = document.getElementById('pesertaContainer');
-        const pesertaId = `nonpegawai_${Date.now()}_${pesertaCounter++}`;
-
-        container.insertAdjacentHTML('beforeend', `
-            <div class="peserta-card border rounded p-3 mb-3" data-peserta-id="${pesertaId}" data-tipe="nonpegawai">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <h6 class="fw-bold text-success mb-0">👤 Peserta: Non-Pegawai</h6>
-                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePeserta(this)">Hapus</button>
-                </div>
-                
-                <div class="row mb-3">
-                    <div class="col-md-4">
-                        <label>Nama Lengkap <span class="text-danger">*</span></label>
-                        <input type="text" name="peserta[${pesertaId}][nama]" class="form-control" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label>NIK / Identitas</label>
-                        <input type="text" name="peserta[${pesertaId}][nik]" class="form-control">
-                    </div>
-                    <div class="col-md-4">
-                        <label>Jabatan / Instansi</label>
-                        <input type="text" name="peserta[${pesertaId}][instansi]" class="form-control">
-                    </div>
-                </div>
-
-                <div class="d-flex gap-2 mb-2">
-                    <button type="button" class="btn btn-sm btn-outline-success" onclick="addRincianToPeserta('${pesertaId}')">
-                        + Tambah Rincian Biaya
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyRincianFromFirst('${pesertaId}')">
-                        📋 Copy dari Peserta Pertama
-                    </button>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-bordered" style="min-width: 1000px;">
-                        <thead>
-                            <tr><th>Jenis</th><th>Uraian</th><th>Volume</th><th>Satuan</th><th>Tarif</th><th>Total</th><th>Aksi</th></tr>
-                        </thead>
-                        <tbody id="tbody-${pesertaId}"></tbody>
-                    </table>
-                </div>
+            <div class="card-body">
+                <select name="peserta[${kelompok}][${pesertaId}][pegawai_id]" class="form-select mb-3">
+                    ${options}
+                </select>
+                ${renderTable(kelompok, pesertaId)}
             </div>
-        `);
-        
-        toggleCopyToAllButton();
+        </div>
+    `);
+
+    toggleCopyToAllButton(kelompok);
+}
+
+function addNonPegawaiRow(kelompok) {
+    const container = document.getElementById(`container-${kelompok}`);
+    const pesertaId = `${kelompok}_${Date.now()}_${pesertaCounter++}`;
+
+    container.insertAdjacentHTML('beforeend', `
+        <div class="peserta-card border rounded p-3 mb-3" data-peserta-id="${pesertaId}">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <strong class="text-success">
+                    <i class="bi bi-person me-1"></i> ${kelompok.toUpperCase()} - Non Pegawai
+                </strong>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.peserta-card').remove()">
+                    <i class="bi bi-trash me-1"></i> Hapus
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label small text-secondary fw-semibold">Nama Lengkap</label>
+                        <input type="text"
+                            name="peserta[${kelompok}][${pesertaId}][nama]"
+                            class="form-control"
+                            placeholder="Masukkan nama lengkap">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-secondary fw-semibold">NIP / NIK</label>
+                        <input type="text"
+                            name="peserta[${kelompok}][${pesertaId}][nik]"
+                            class="form-control"
+                            placeholder="Masukkan NIP / NIK">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-secondary fw-semibold">Instansi / Jabatan</label>
+                        <input type="text"
+                            name="peserta[${kelompok}][${pesertaId}][instansi]"
+                            class="form-control"
+                            placeholder="Masukkan instansi atau jabatan">
+                    </div>
+                </div>
+                ${renderTable(kelompok, pesertaId)}
+            </div>
+        </div>
+    `);
+
+    toggleCopyToAllButton(kelompok);
+}
+
+function renderTable(kelompok, pesertaId) {
+    return `
+        <div class="mt-3">
+            <button type="button" class="btn btn-sm btn-outline-success mb-3" onclick="addRincian('${kelompok}','${pesertaId}')">
+                <i class="bi bi-plus-circle me-1"></i> Tambah Rincian
+            </button>
+
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:15%">Jenis</th>
+                            <th style="width:25%">Uraian</th>
+                            <th style="width:10%">Vol</th>
+                            <th style="width:10%">Satuan</th>
+                            <th style="width:15%">Tarif</th>
+                            <th style="width:15%">Total</th>
+                            <th style="width:10%"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-${pesertaId}"></tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+function addRincian(kelompok, pesertaId) {
+    const tbody = document.getElementById(`tbody-${pesertaId}`);
+    const index = Date.now();
+    const hari = getJumlahHari();
+
+    let jenisOptions = '<option value="">Pilih Jenis Biaya</option>';
+    jenisBiayaData.forEach(j => {
+        jenisOptions += `<option value="${j.id}">${j.nama_biaya}</option>`;
+    });
+
+    tbody.insertAdjacentHTML('beforeend', `
+        <tr class="align-middle">
+            <td>
+                <select name="rincian[${kelompok}][${pesertaId}][${index}][jenis_biaya_id]" 
+                        class="form-select form-select-sm">
+                    ${jenisOptions}
+                </select>
+            </td>
+            <td>
+                <input type="text" 
+                       name="rincian[${kelompok}][${pesertaId}][${index}][uraian]" 
+                       class="form-control form-control-sm"
+                       placeholder="Uraian">
+            </td>
+            <td>
+                <input type="number" 
+                       name="rincian[${kelompok}][${pesertaId}][${index}][volume]" 
+                       class="form-control form-control-sm vol" 
+                       value="${hari}">
+            </td>
+            <td>
+                <input type="text" 
+                       name="rincian[${kelompok}][${pesertaId}][${index}][satuan]" 
+                       class="form-control form-control-sm" 
+                       value="hari">
+            </td>
+            <td>
+                <input type="number" 
+                       name="rincian[${kelompok}][${pesertaId}][${index}][tarif]" 
+                       class="form-control form-control-sm tarif"
+                       placeholder="0">
+            </td>
+            <td>
+                <input type="number" 
+                       name="rincian[${kelompok}][${pesertaId}][${index}][total]" 
+                       class="form-control form-control-sm total" 
+                       readonly
+                       placeholder="0">
+            </td>
+            <td class="text-center">
+                <button type="button" 
+                        class="btn btn-sm btn-outline-danger" 
+                        onclick="this.closest('tr').remove()">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `);
+}
+
+document.addEventListener('input', function(e){
+    if (e.target.classList.contains('vol') || e.target.classList.contains('tarif')) {
+        const row = e.target.closest('tr');
+        const v = parseFloat(row.querySelector('.vol').value) || 0;
+        const t = parseFloat(row.querySelector('.tarif').value) || 0;
+        row.querySelector('.total').value = v * t;
     }
-    
-    // Function untuk menyalin rincian dari peserta pertama ke peserta tertentu
-    function copyRincianFromFirst(targetPesertaId) {
-        const container = document.getElementById('pesertaContainer');
-        const pesertaCards = container.querySelectorAll('.peserta-card');
-        
-        if (pesertaCards.length < 2) {
-            alert('Tidak ada peserta lain sebagai sumber. Minimal 2 peserta.');
-            return;
-        }
-        
-        const firstPeserta = pesertaCards[0];
-        const firstTbody = firstPeserta.querySelector('tbody');
-        
-        if (!firstTbody || firstTbody.querySelectorAll('tr').length === 0) {
-            alert('Peserta pertama belum memiliki rincian biaya. Silakan tambah rincian terlebih dahulu.');
-            return;
-        }
-        
-        const targetPeserta = document.querySelector(`.peserta-card[data-peserta-id="${targetPesertaId}"]`);
-        const targetTbody = targetPeserta.querySelector('tbody');
-        
-        if (!targetTbody) return;
-        
-        const firstRows = firstTbody.querySelectorAll('tr');
-        
-        // Kosongkan tbody target
+});
+
+function toggleCopyToAllButton(kelompok) {
+    const container = document.getElementById(`container-${kelompok}`);
+    const pesertaCards = container.querySelectorAll('.peserta-card');
+    const btn = document.getElementById(`btnCopy-${kelompok}`);
+
+    if (btn) {
+        btn.style.display = pesertaCards.length >= 2 ? 'inline-flex' : 'none';
+    }
+}
+
+function copyToAllPeserta(kelompok) {
+    const container = document.getElementById(`container-${kelompok}`);
+    const pesertaCards = container.querySelectorAll('.peserta-card');
+
+    if (pesertaCards.length < 2) {
+        alert('Minimal ada 2 peserta');
+        return;
+    }
+
+    const firstPeserta = pesertaCards[0];
+    const firstTbody = firstPeserta.querySelector('tbody');
+
+    if (!firstTbody || firstTbody.querySelectorAll('tr').length === 0) {
+        alert('Peserta pertama belum ada rincian');
+        return;
+    }
+
+    const firstRows = firstTbody.querySelectorAll('tr');
+    let copied = 0;
+
+    for (let i = 1; i < pesertaCards.length; i++) {
+        const target = pesertaCards[i];
+        const targetTbody = target.querySelector('tbody');
+
+        if (!targetTbody) continue;
+
         targetTbody.innerHTML = '';
-        
-        // Clone setiap row
+
         firstRows.forEach(row => {
-            const cloneRow = row.cloneNode(true);
-            
-            const allInputsSelects = cloneRow.querySelectorAll('input, select');
-            allInputsSelects.forEach(field => {
+            const clone = row.cloneNode(true);
+
+            const originalFields = row.querySelectorAll('input, select');
+            const cloneFields = clone.querySelectorAll('input, select');
+
+            cloneFields.forEach((field, index) => {
                 const name = field.getAttribute('name');
+
                 if (name) {
-                    const newName = name.replace(/rincian\[[^\]]+\]/, `rincian[${targetPesertaId}]`);
+                    const newName = name.replace(
+                        /rincian\[[^\]]+\]\[[^\]]+\]/,
+                        `rincian[${kelompok}][${target.dataset.pesertaId}]`
+                    );
                     field.setAttribute('name', newName);
                 }
+
+                // 🔥 FIX: copy value secara eksplisit
+                if (field.tagName === 'SELECT') {
+                    field.value = originalFields[index].value;
+                } else {
+                    field.value = originalFields[index].value;
+                }
             });
-            
-            targetTbody.appendChild(cloneRow);
-        });
-        
-        alert('Berhasil menyalin rincian dari peserta pertama.');
-    }
 
-    function addRincianToPeserta(pesertaId) {
-        const tbody = document.getElementById(`tbody-${pesertaId}`);
-        if (!tbody) return;
-        
-        const index = Date.now();
-        const jumlahHari = getJumlahHari();
-        
-        let jenisOptions = '';
-        jenisBiayaData.forEach(jenis => {
-            jenisOptions += `<option value="${jenis.id}">${jenis.nama_biaya}</option>`;
+            targetTbody.appendChild(clone);
         });
 
-        tbody.insertAdjacentHTML('beforeend', `
-            <tr>
-                <td><select name="rincian[${pesertaId}][${index}][jenis_biaya_id]" class="form-select">${jenisOptions}</select></td>
-                <td><input type="text" name="rincian[${pesertaId}][${index}][uraian]" class="form-control" placeholder="Uraian biaya"></td>
-                <td><input type="number" name="rincian[${pesertaId}][${index}][volume]" class="form-control volume-field" value="${jumlahHari}"></td>
-                <td><input type="text" name="rincian[${pesertaId}][${index}][satuan]" class="form-control" value="hari"></td>
-                <td><input type="number" name="rincian[${pesertaId}][${index}][tarif]" class="form-control tarif-field"></td>
-                <td><input type="number" name="rincian[${pesertaId}][${index}][total]" class="form-control total-field" readonly></td>
-                <td><button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">Hapus</button></td>
-            </tr>
-        `);
+        copied++;
     }
 
-    function removePeserta(btn) {
-        btn.closest('.peserta-card').remove();
-        toggleCopyToAllButton();
-    }
-
-    // Event listener untuk perhitungan total
-    document.addEventListener('input', function(e){
-        if (e.target.classList.contains('volume-field') || e.target.classList.contains('tarif-field')) {
-            const row = e.target.closest('tr');
-            const volume = parseFloat(row.querySelector('.volume-field')?.value) || 0;
-            const tarif = parseFloat(row.querySelector('.tarif-field')?.value) || 0;
-            const totalField = row.querySelector('.total-field');
-            if (totalField) totalField.value = (volume * tarif).toFixed(2);
-        }
-    });
-
-    function updateSemuaVolume() {
-        const jumlahHari = getJumlahHari();
-        document.querySelectorAll('.volume-field').forEach(function(field){
-            field.value = jumlahHari;
-            const row = field.closest('tr');
-            const tarif = parseFloat(row.querySelector('.tarif-field')?.value) || 0;
-            const totalField = row.querySelector('.total-field');
-            if (totalField) totalField.value = (jumlahHari * tarif).toFixed(2);
-        });
-    }
-
-    document.getElementById('tanggal_mulai').addEventListener('change', updateSemuaVolume);
-    document.getElementById('tanggal_akhir').addEventListener('change', updateSemuaVolume);
+    alert(`Berhasil copy ke ${copied} peserta`);
+}
 </script>
 
 <style>
