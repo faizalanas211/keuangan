@@ -13,14 +13,7 @@ class KelompokPerjalanan extends Model
     protected $fillable = [
         'perjalanan_dinas_id',
         'nama_kelompok',
-        'nomor_st',
-        'tanggal_st',
         'created_at',
-    ];
-
-    protected $casts = [
-        'tanggal_st' => 'date',
-        'created_at' => 'datetime',
     ];
 
     /*
@@ -32,6 +25,11 @@ class KelompokPerjalanan extends Model
     public function perjalanan()
     {
         return $this->belongsTo(PerjalananDinas::class, 'perjalanan_dinas_id');
+    }
+
+    public function subKelompok()
+    {
+        return $this->hasMany(SubKelompokPerjalanan::class, 'kelompok_perjalanan_id');
     }
 
     public function pegawai()

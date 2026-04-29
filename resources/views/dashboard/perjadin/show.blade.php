@@ -98,10 +98,7 @@
             </h4>
             <p class="text-muted mb-0">Informasi lengkap perjalanan dinas dan rincian biaya</p>
         </div>
-        <a href="{{ route('perjadin.export.nominatif', $perjalanan->id) }}" 
-           class="btn btn-success shadow-sm">
-            <i class="fas fa-file-excel me-2"></i> Export Nominatif
-        </a>
+        
     </div>
 
     {{-- ================= INFORMASI PERJALANAN ================= --}}
@@ -195,124 +192,174 @@
     <h5 class="fw-semibold mb-3" style="color: #1b5e20;">
         <i class="fas fa-users me-2"></i>Data Peserta Per Kelompok
     </h5>
+    <ul class="nav nav-tabs mb-3" id="kelompokTab" role="tablist">
+    @foreach($perjalanan->kelompokPerjalanan as $kIndex => $kelompok)
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ $kIndex == 0 ? 'active' : '' }}"
+                id="tab-{{ $kIndex }}"
+                data-bs-toggle="tab"
+                data-bs-target="#content-{{ $kIndex }}"
+                type="button">
 
-    @forelse($perjalanan->kelompokPerjalanan as $kIndex => $kelompok)
+                {{ strtoupper($kelompok->nama_kelompok) }}
+            </button>
+        </li>
+    @endforeach
+</ul>
+
+   <div class="tab-content">
+
+@foreach($perjalanan->kelompokPerjalanan as $kIndex => $kelompok)
+<div class="tab-pane fade {{ $kIndex == 0 ? 'show active' : '' }}" 
+     id="content-{{ $kIndex }}">
+
     <div class="card card-shadow mb-4">
-        <div class="card-body p-0">
-            
-            {{-- Header Kelompok --}}
-            <div class="kelompok-header d-flex flex-wrap justify-content-between align-items-center">
-                <div>
-                    <h5 class="mb-0 fw-bold text-success">
-                        <i class="fas fa-layer-group me-2"></i>
-                        {{ strtoupper($kelompok->nama_kelompok) }}
-                    </h5>
-                </div>
-                <div class="d-flex gap-3">
-                    <div class="badge-st" style="background-color: #e3ffe8; color: #1b5e20;">
-                        <i class="far fa-file-alt me-1"></i>
-                        <strong>No ST:</strong> {{ $kelompok->nomor_st ?? '-' }}
-                    </div>
-                    <div class="badge-st" style="background-color: #e3ffe8; color: #1b5e20;">
-                        <i class="far fa-calendar-alt me-1"></i>
-                        <strong>Tanggal ST:</strong>
-                        {{ $kelompok->tanggal_st ? \Carbon\Carbon::parse($kelompok->tanggal_st)->format('d/m/Y') : '-' }}
-                    </div>
-                </div>
+        <div class="card-body">
+
+            {{-- LOOP SUB KELOMPOK --}}
+            @forelse($kelompok->subKelompok as $sIndex => $sub)
+
+@php
+    $totalST = 0;
+
+    foreach ($sub->pegawai as $pp) {
+        $totalST += $pp->rincian->sum('total');
+    }
+    foreach ($sub->nonpegawai as $np) {
+        $totalST += $np->rincian->sum('total');
+    }
+@endphp
+
+<div class="card card-shadow mb-4">
+    <div class="card-body">
+
+        {{-- HEADER ST --}}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h6 class="fw-bold mb-1">
+                    No ST: {{ $sub->nomor_st ?? '-' }}
+                </h6>
+                <small class="text-muted">
+                    {{ $sub->tanggal_st ? \Carbon\Carbon::parse($sub->tanggal_st)->format('d F Y') : '-' }}
+                </small>
             </div>
 
-            <div class="p-4 pt-0">
-                {{-- PEGAWAI --}}
-                @if($kelompok->pegawai && $kelompok->pegawai->count())
-                <div class="mb-4">
-                    <h6 class="fw-semibold text-primary mb-3">
-                        <i class="fas fa-user-tie me-2"></i>Pegawai
-                    </h6>
+            <span class="badge bg-success">
+                Rp{{ number_format($totalST,0,',','.') }}
+            </span>
+        </div>
 
-                    <div class="accordion" id="accordionPegawai{{ $kIndex }}">
-                        @foreach($kelompok->pegawai as $index => $pp)
-                        @php $grandTotal = $pp->rincian->sum('total'); @endphp
-                        
-                        <div class="accordion-item mb-2 border rounded overflow-hidden">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button collapsed py-3" 
-                                        data-bs-toggle="collapse" 
-                                        data-bs-target="#pegawai{{ $kIndex }}{{ $index }}">
-                                    <div class="d-flex justify-content-between w-100 me-3">
-                                        <span>
-                                            <i class="fas fa-user me-2"></i>
-                                            <strong>{{ $pp->pegawai->nama }}</strong>
-                                            <span class="text-muted ms-2">({{ $pp->pegawai->nip }})</span>
-                                        </span>
-                                        <span class="text-success fw-semibold">
-                                            Rp{{ number_format($grandTotal, 0, ',', '.') }}
-                                        </span>
-                                    </div>
-                                </button>
-                            </h2>
+        {{-- ================= PEGAWAI ================= --}}
+        @if($sub->pegawai->count())
+        <div class="mb-4">
+            <h6 class="fw-semibold text-primary mb-2">Pegawai</h6>
 
-                            <div id="pegawai{{ $kIndex }}{{ $index }}" 
-                                 class="accordion-collapse collapse">
-                                <div class="accordion-body p-0">
-                                    @include('dashboard.perjadin.partials.table-rincian', ['rincian' => $pp->rincian, 'total' => $grandTotal])
-                                </div>
+            <div class="accordion" id="pegawaiAccordion{{ $kIndex }}{{ $sIndex }}">
+                @foreach($sub->pegawai as $pIndex => $pp)
+                @php $total = $pp->rincian->sum('total'); @endphp
+
+                <div class="accordion-item mb-2 border rounded">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#pegawai{{ $kIndex }}{{ $sIndex }}{{ $pIndex }}">
+
+                            <div class="d-flex justify-content-between w-100 me-3">
+                                <span>
+                                    {{ $pp->pegawai->nama }}
+                                    <small class="text-muted">
+                                        ({{ $pp->pegawai->nip }})
+                                    </small>
+                                </span>
+
+                                <span class="text-success fw-semibold">
+                                    Rp{{ number_format($total,0,',','.') }}
+                                </span>
                             </div>
+                        </button>
+                    </h2>
+
+                    <div id="pegawai{{ $kIndex }}{{ $sIndex }}{{ $pIndex }}"
+                        class="accordion-collapse collapse"
+                        data-bs-parent="#pegawaiAccordion{{ $kIndex }}{{ $sIndex }}">
+
+                        <div class="accordion-body p-0">
+                            @include('dashboard.perjadin.partials.table-rincian', [
+                                'rincian' => $pp->rincian,
+                                'total' => $total
+                            ])
                         </div>
-                        @endforeach
                     </div>
                 </div>
-                @endif
-
-                {{-- NON PEGAWAI --}}
-                @if($kelompok->nonpegawai && $kelompok->nonpegawai->count())
-                <div>
-                    <h6 class="fw-semibold text-success mb-3">
-                        <i class="fas fa-user-friends me-2"></i>Non Pegawai
-                    </h6>
-
-                    <div class="accordion" id="accordionNP{{ $kIndex }}">
-                        @foreach($kelompok->nonpegawai as $index => $np)
-                        @php $grandTotal = $np->rincian->sum('total'); @endphp
-                        
-                        <div class="accordion-item mb-2 border rounded overflow-hidden">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button collapsed py-3" 
-                                        data-bs-toggle="collapse" 
-                                        data-bs-target="#np{{ $kIndex }}{{ $index }}">
-                                    <div class="d-flex justify-content-between w-100 me-3">
-                                        <span>
-                                            <i class="fas fa-user me-2"></i>
-                                            <strong>{{ $np->nama }}</strong>
-                                            @if($np->instansi)
-                                            <span class="text-muted ms-2">({{ $np->instansi }})</span>
-                                            @endif
-                                        </span>
-                                        <span class="text-success fw-semibold">
-                                            Rp{{ number_format($grandTotal, 0, ',', '.') }}
-                                        </span>
-                                    </div>
-                                </button>
-                            </h2>
-
-                            <div id="np{{ $kIndex }}{{ $index }}" 
-                                 class="accordion-collapse collapse">
-                                <div class="accordion-body p-0">
-                                    @include('dashboard.perjadin.partials.table-rincian', ['rincian' => $np->rincian, 'total' => $grandTotal])
-                                </div>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
-                @endif
+                @endforeach
             </div>
         </div>
+        @endif
+
+
+        {{-- ================= NON PEGAWAI ================= --}}
+        @if($sub->nonpegawai->count())
+        <div>
+            <h6 class="fw-semibold text-success mb-2">Non Pegawai</h6>
+
+            <div class="accordion" id="npAccordion{{ $kIndex }}{{ $sIndex }}">
+                @foreach($sub->nonpegawai as $nIndex => $np)
+                @php $total = $np->rincian->sum('total'); @endphp
+
+                <div class="accordion-item mb-2 border rounded">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#np{{ $kIndex }}{{ $sIndex }}{{ $nIndex }}">
+
+                            <div class="d-flex justify-content-between w-100 me-3">
+                                <span>
+                                    {{ $np->nama }}
+                                    @if($np->instansi)
+                                        <small class="text-muted">
+                                            ({{ $np->instansi }})
+                                        </small>
+                                    @endif
+                                </span>
+
+                                <span class="text-success fw-semibold">
+                                    Rp{{ number_format($total,0,',','.') }}
+                                </span>
+                            </div>
+                        </button>
+                    </h2>
+
+                    <div id="np{{ $kIndex }}{{ $sIndex }}{{ $nIndex }}"
+                        class="accordion-collapse collapse"
+                        data-bs-parent="#npAccordion{{ $kIndex }}{{ $sIndex }}">
+
+                        <div class="accordion-body p-0">
+                            @include('dashboard.perjadin.partials.table-rincian', [
+                                'rincian' => $np->rincian,
+                                'total' => $total
+                            ])
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
     </div>
-    @empty
-    <div class="alert alert-info">
-        <i class="fas fa-info-circle me-2"></i>Belum ada data kelompok perjalanan.
+</div>
+
+@empty
+<p class="text-muted">Belum ada data</p>
+@endforelse
+
+        </div>
     </div>
-    @endforelse
+
+</div>
+@endforeach
+
+</div>
 
     {{-- ================= TOTAL KESELURUHAN ================= --}}
     <div class="total-card p-4 mt-4">

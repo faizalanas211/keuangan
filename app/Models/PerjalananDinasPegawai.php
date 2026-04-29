@@ -14,7 +14,7 @@ class PerjalananDinasPegawai extends Model
     protected $fillable = [
         'perjalanan_dinas_id',
         'pegawai_id',
-        'kelompok_id',
+        'subkelompok_id',
     ];
 
     /*
@@ -37,5 +37,10 @@ class PerjalananDinasPegawai extends Model
     public function rincian()
     {
         return $this->hasMany(RincianBiaya::class);
+    }
+
+    public function subKelompok()
+    {
+        return $this->belongsTo(SubKelompokPerjalanan::class, 'subkelompok_id');
     }
 }

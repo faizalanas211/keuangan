@@ -41,17 +41,14 @@ public function __construct($perjalanan)
             ->flatMap(fn($np) => $np->rincian)
     )
 
-    ->groupBy(function ($item) {
-        return $item->jenis_biaya_id . '|' . ($item->uraian ?? '-');
-    })
+    ->groupBy('jenis_biaya_id')
     ->map(function ($items) {
 
         $first = $items->first();
 
         return [
             'jenis_id' => $first->jenis_biaya_id,
-            'uraian'   => $first->uraian ?? '-', 
-            'label'    => strtoupper($first->uraian ?? $first->jenisBiaya->nama_biaya),
+            'label'    => strtoupper($first->jenisBiaya->nama_biaya),
             'is_transport' => str_contains(
                 strtolower($first->jenisBiaya->nama_biaya),
                 'transport'
@@ -94,10 +91,7 @@ public function __construct($perjalanan)
 
         foreach ($this->columns as $col) {
 
-            $items = $pp->rincian->filter(function ($item) use ($col) {
-                return $item->jenis_biaya_id == $col['jenis_id']
-                    && ($item->uraian ?? '-') == ($col['uraian'] ?? '-');
-            });
+            $items = $pp->rincian->where('jenis_biaya_id', $col['jenis_id']);
 
             if ($items->isNotEmpty()) {
 
@@ -159,7 +153,7 @@ public function __construct($perjalanan)
 
             $r = $np->rincian->first(function ($item) use ($col) {
                 return $item->jenis_biaya_id == $col['jenis_id']
-                    && ($item->uraian ?? '-') == ($col['uraian'] ?? '-');
+                    && ($item->uraian ?? '-') == $col['uraian'];
             });
 
             if ($r) {

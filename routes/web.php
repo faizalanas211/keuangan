@@ -109,7 +109,7 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
 
     // Perjadin
     Route::resource('perjadin', PerjadinController::class);
-    Route::get('perjadin/{id}/export-nominatif',
+    Route::get('perjadin/{id}/export-nominatif/{kelompokId}',
         [PerjadinController::class, 'exportNominatif']
     )->name('perjadin.export.nominatif');
     // Route::get('perjadin/{id}/export-sby-penyimpan/{pp}',

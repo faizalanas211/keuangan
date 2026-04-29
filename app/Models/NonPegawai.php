@@ -14,7 +14,7 @@ class NonPegawai extends Model
         'nama',
         'nik',
         'instansi',
-        'kelompok_id',
+        'subkelompok_id',
     ];
 
     // ===============================
@@ -29,5 +29,10 @@ class NonPegawai extends Model
     public function rincian()
     {
         return $this->hasMany(RincianBiaya::class, 'nonpegawai_id');
+    }
+
+    public function subKelompok()
+    {
+        return $this->belongsTo(SubKelompokPerjalanan::class, 'subkelompok_id');
     }
 }
