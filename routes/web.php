@@ -109,7 +109,7 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
 
     // Perjadin
     Route::resource('perjadin', PerjadinController::class);
-    Route::get('perjadin/{id}/export-nominatif/{kelompokId}',
+    Route::get('perjadin/{id}/export-nominatif',
         [PerjadinController::class, 'exportNominatif']
     )->name('perjadin.export.nominatif');
     // Route::get('perjadin/{id}/export-sby-penyimpan/{pp}',
@@ -119,10 +119,18 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
         ->name('perjadin.export.sby');
     Route::get('perjadin/export/sby-non-pegawai/{np}', [PerjadinController::class, 'exportSbyNonPegawai'])
         ->name('perjadin.export.sbyNonPegawai');
+    Route::get('perjadin/export/sby/zip/{pp}', [PerjadinController::class, 'exportAllSbyZip'])
+        ->name('perjadin.export.sby.zip');
     Route::get('/perjadin/kuitansi/{pegawaiPerjalanan}', [PerjadinController::class, 'exportKuitansi'])
         ->name('perjadin.export.kuitansi');
     Route::get('/perjadin/kuitansi-non-pegawai/{nonpegawai}', [PerjadinController::class, 'exportKuitansiNonPegawai'])
         ->name('perjadin.export.kuitansiNonPegawai');
+    Route::get('perjadin/export/kuitansi/zip/{pp}', [PerjadinController::class, 'exportAllKuitansiZip'])
+        ->name('perjadin.export.kuitansi.zip');
+    Route::get('perjadin/export/amplop/{pp}', [PerjadinController::class, 'exportAmplop'])
+        ->name('perjadin.export.amplop');
+    Route::get('perjadin/export/amplop-non-pegawai/{np}', [PerjadinController::class, 'exportAmplopNonPegawai'])
+        ->name('perjadin.export.amplopNonPegawai');
 
     // Pengaturan Template
     Route::resource('template', TemplateController::class);

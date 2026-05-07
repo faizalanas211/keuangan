@@ -24,7 +24,7 @@
                             <td><strong>Tujuan Kota</strong></td>
                             <td id="review-tujuan-kota">-</td>
                         </tr>
-                    </table>
+                    前程
                 </div>
                 <div class="col-md-6">
                     <table class="table table-sm table-borderless">
@@ -112,6 +112,8 @@
 <script>
 // Function to collect all form data and display in review
 function updateReview() {
+    console.log('Updating review...');
+    
     // Ambil data dari step 1
     document.getElementById('review-alat-angkutan').innerText = 
         document.querySelector('[name="alat_angkutan"]')?.value || '-';
@@ -120,15 +122,15 @@ function updateReview() {
     document.getElementById('review-tujuan-kota').innerText = 
         document.querySelector('[name="tujuan_kota"]')?.value || '-';
     document.getElementById('review-tanggal-mulai').innerText = 
-        document.querySelector('[name="tanggal_mulai"]')?.value || '-';
+        document.getElementById('tanggal_mulai')?.value || '-';
     document.getElementById('review-tanggal-akhir').innerText = 
-        document.querySelector('[name="tanggal_akhir"]')?.value || '-';
+        document.getElementById('tanggal_akhir')?.value || '-';
     document.getElementById('review-nama-kegiatan').innerText = 
         document.querySelector('[name="nama_kegiatan"]')?.value || '-';
     
     // Hitung jumlah hari
-    const mulai = document.querySelector('[name="tanggal_mulai"]')?.value;
-    const akhir = document.querySelector('[name="tanggal_akhir"]')?.value;
+    const mulai = document.getElementById('tanggal_mulai')?.value;
+    const akhir = document.getElementById('tanggal_akhir')?.value;
     if (mulai && akhir) {
         const days = (new Date(akhir) - new Date(mulai)) / (1000 * 60 * 60 * 24) + 1;
         document.getElementById('review-jumlah-hari').innerText = days;
@@ -148,9 +150,15 @@ function reviewTipe(tipe) {
     const container = document.getElementById(`review-${tipe}`);
     const stCards = document.querySelectorAll(`#container-${tipe} .st-card`);
 
-    if (!stCards.length) {
+    if (!container) {
+        console.error(`Container review-${tipe} not found`);
+        return;
+    }
+
+    if (!stCards || stCards.length === 0) {
         container.innerHTML = '<p class="text-muted">Belum ada data</p>';
-        document.getElementById(`total-${tipe}`).innerText = 'Rp 0';
+        const totalElement = document.getElementById(`total-${tipe}`);
+        if (totalElement) totalElement.innerText = 'Rp 0';
         updateGrandTotal();
         return;
     }
@@ -200,7 +208,7 @@ function reviewTipe(tipe) {
                     const selected = select?.options[select.selectedIndex];
 
                     nama = selected?.text?.split(' (')[0] || '-';
-                    identitas = selected?.value || '-';
+                    identitas = select?.value || '-';
                 } else {
                     nama = p.querySelector('[name*="[nama]"]')?.value || '-';
                     identitas = p.querySelector('[name*="[nik]"]')?.value || '-';
@@ -219,8 +227,8 @@ function reviewTipe(tipe) {
 
                 html += `
                     <tr>
-                        <td>${nama}</td>
-                        <td>${identitas}</td>
+                        <td>${escapeHtml(nama)}</td>
+                        <td>${escapeHtml(identitas)}</td>
                         <td>${rows.length} item</td>
                         <td class="fw-bold">${formatRupiah(totalPeserta)}</td>
                     </tr>
@@ -243,7 +251,10 @@ function reviewTipe(tipe) {
     });
 
     container.innerHTML = html;
-    document.getElementById(`total-${tipe}`).innerText = formatRupiah(totalTipe);
+    const totalElement = document.getElementById(`total-${tipe}`);
+    if (totalElement) {
+        totalElement.innerText = formatRupiah(totalTipe);
+    }
 
     updateGrandTotal();
 }
@@ -254,7 +265,10 @@ function updateGrandTotal() {
     const totalNarasumber = parseRupiah(document.getElementById('total-narasumber')?.innerText || 'Rp 0');
     
     const grandTotal = totalPanitia + totalPeserta + totalNarasumber;
-    document.getElementById('grand-total').innerText = formatRupiah(grandTotal);
+    const grandTotalElement = document.getElementById('grand-total');
+    if (grandTotalElement) {
+        grandTotalElement.innerText = formatRupiah(grandTotal);
+    }
 }
 
 function formatRupiah(angka) {
@@ -263,28 +277,30 @@ function formatRupiah(angka) {
 }
 
 function parseRupiah(string) {
+    if (!string) return 0;
     return parseInt(string.replace(/[^0-9,-]/g, '').replace(',', '')) || 0;
 }
 
-// Panggil updateReview saat step 5 di-load
-document.addEventListener('DOMContentLoaded', function() {
-    // Override fungsi loadStepData untuk step 5
-    const originalLoadStepData = window.loadStepData;
-    if (originalLoadStepData) {
-        window.loadStepData = function() {
-            if (currentStep === 5) {
-                updateReview();
-            } else if (originalLoadStepData) {
-                originalLoadStepData();
-            }
-        };
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+// Expose ke global
+window.updateReview = updateReview;
+window.reviewTipe = reviewTipe;
+
+// Auto update saat ada perubahan di form
+document.addEventListener('input', function() {
+    // Cek apakah step aktif adalah step 5
+    const step5 = document.getElementById('step5');
+    if (step5 && step5.classList.contains('active')) {
+        updateReview();
     }
-    
-    // Juga update saat ada perubahan data
-    setInterval(() => {
-        if (currentStep === 5) {
-            updateReview();
-        }
-    }, 500);
 });
 </script>

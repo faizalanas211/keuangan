@@ -30,67 +30,170 @@ function getJumlahHari() {
 
 let subKelompokCounter = 1;
 
-// function addSubKelompok(kelompok) {
+// Fungsi utama untuk menambah sub kelompok (tanpa auto-load anggota)
+function addSubKelompok(kelompok, existingData = null) {
+    const container = document.getElementById(`container-${kelompok}`);
+    const index = subKelompokCounter++;
 
-//     const container = document.getElementById(`container-${kelompok}`);
+    container.insertAdjacentHTML('beforeend', `
+        <div class="card border mb-3 st-card" data-st-index="${index}">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>Sub Kelompok ST</strong>
+                    <small class="text-muted d-block">Klik untuk buka detail peserta</small>
+                </div>
 
-//     const index = subKelompokCounter++;
+                <div class="d-flex gap-2">
+                    <button type="button"
+                        class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1 toggle-btn"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#collapse-${kelompok}-${index}">
+                        Detail 
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
 
-//     container.insertAdjacentHTML('beforeend', `
-//         <div class="card border mb-3">
-//             <div class="card-body">
+                    <button type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        onclick="this.closest('.st-card').remove()">
+                        Hapus
+                    </button>
+                </div>
+            </div>
 
-//                 <div class="row mb-3">
-//                     <div class="col-md-5">
-//                         <label>Nomor ST</label>
-//                         <input type="text" 
-//                             name="kelompok[${kelompok}][${index}][nomor_st]" 
-//                             class="form-control">
-//                     </div>
+            <div class="collapse show" id="collapse-${kelompok}-${index}">
+                <div class="card-body">
 
-//                     <div class="col-md-5">
-//                         <label>Tanggal ST</label>
-//                         <input type="date" 
-//                             name="kelompok[${kelompok}][${index}][tanggal_st]" 
-//                             class="form-control">
-//                     </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Nomor ST</label>
+                            <input type="text"
+                                name="kelompok[${kelompok}][${index}][nomor_st]"
+                                class="form-control"
+                                value="${existingData?.nomor_st || ''}">
+                        </div>
 
-//                     <div class="col-md-2 d-flex align-items-end">
-//                         <button type="button" 
-//                             class="btn btn-outline-danger w-100"
-//                             onclick="this.closest('.card').remove()">
-//                             Hapus
-//                         </button>
-//                     </div>
-//                 </div>
+                        <div class="col-md-6">
+                            <label>Tanggal ST</label>
+                            <input type="date"
+                                name="kelompok[${kelompok}][${index}][tanggal_st]"
+                                class="form-control"
+                                value="${existingData?.tanggal_st || ''}">
+                        </div>
+                    </div>
 
-//                 <div id="subkelompok-${kelompok}-${index}"></div>
+                    <div id="subkelompok-${kelompok}-${index}"></div>
 
-//                 <button type="button" 
-//                     class="btn btn-sm btn-outline-success mt-2"
-//                     onclick="addPegawaiRow('${kelompok}', ${index})">
-//                     + Pegawai
-//                 </button>
+                    <div class="d-flex gap-2">
+                        <button type="button"
+                            class="btn btn-sm btn-outline-success"
+                            onclick="addPegawaiRow('${kelompok}', ${index})">
+                            + Pegawai
+                        </button>
 
-//                 <button type="button" 
-//                     class="btn btn-sm btn-outline-success mt-2"
-//                     onclick="addNonPegawaiRow('${kelompok}', ${index})">
-//                     + Non Pegawai
-//                 </button>
+                        <button type="button"
+                            class="btn btn-sm btn-outline-success"
+                            onclick="addNonPegawaiRow('${kelompok}', ${index})">
+                            + Non Pegawai
+                        </button>
 
-//             </div>
-//         </div>
-//     `);
-// }
+                        <button type="button"
+                            class="btn btn-sm btn-outline-info"
+                            onclick="copyToAllPeserta('${kelompok}', ${index})">
+                            <i class="bi bi-files"></i> Copy ke Semua
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    `);
+
+    return index;
+}
+
+// Fungsi untuk load data edit (hanya dipanggil sekali dari edit.blade)
+function loadEditData(kelompok, kelompokDataArray) {
+    console.log(`loadEditData called for ${kelompok}:`, kelompokDataArray);
+    
+    if (!kelompokDataArray || kelompokDataArray.length === 0) return;
+    
+    // Bersihkan container
+    const container = document.getElementById(`container-${kelompok}`);
+    if (container) {
+        container.innerHTML = '';
+    }
+    
+    // Reset counter
+    subKelompokCounter = 1;
+    
+    // Loop setiap kelompok data
+    kelompokDataArray.forEach((kelompokData, idx) => {
+        // Buat subkelompok tanpa data anggota dulu
+        const stIndex = addSubKelompok(kelompok, {
+            nomor_st: kelompokData.nomor_st || '',
+            tanggal_st: kelompokData.tanggal_st || ''
+        });
+        
+        // Ambil items (anggota)
+        const items = kelompokData.items || [];
+        
+        // Tambahkan anggota satu per satu dengan delay
+        items.forEach((anggota, anggotaIdx) => {
+            setTimeout(() => {
+                if (anggota.type === 'pegawai' || anggota.pegawai_id) {
+                    // Tambah pegawai
+                    const pesertaId = addPegawaiRow(kelompok, stIndex);
+                    
+                    // Isi data pegawai
+                    const subKelompokDiv = document.getElementById(`subkelompok-${kelompok}-${stIndex}`);
+                    const pesertaCard = subKelompokDiv.querySelector(`.peserta-card[data-peserta-id="${pesertaId}"]`);
+                    
+                    if (pesertaCard) {
+                        const select = pesertaCard.querySelector('select');
+                        if (select && (anggota.pegawai_id || anggota.id)) {
+                            select.value = anggota.pegawai_id || anggota.id;
+                        }
+                        
+                        // Load rincian
+                        if (anggota.rincian && anggota.rincian.length > 0) {
+                            loadRincianToPeserta(kelompok, pesertaId, stIndex, anggota.rincian);
+                        }
+                    }
+                } else {
+                    // Tambah non pegawai
+                    const pesertaId = addNonPegawaiRow(kelompok, stIndex);
+                    
+                    // Isi data non pegawai
+                    const subKelompokDiv = document.getElementById(`subkelompok-${kelompok}-${stIndex}`);
+                    const pesertaCard = subKelompokDiv.querySelector(`.peserta-card[data-peserta-id="${pesertaId}"]`);
+                    
+                    if (pesertaCard) {
+                        const namaInput = pesertaCard.querySelector('input[name*="[nama]"]');
+                        const nikInput = pesertaCard.querySelector('input[name*="[nik]"]');
+                        const instansiInput = pesertaCard.querySelector('input[name*="[instansi]"]');
+                        
+                        if (namaInput) namaInput.value = anggota.nama || '';
+                        if (nikInput) nikInput.value = anggota.nik || '';
+                        if (instansiInput) instansiInput.value = anggota.instansi || '';
+                        
+                        // Load rincian
+                        if (anggota.rincian && anggota.rincian.length > 0) {
+                            loadRincianToPeserta(kelompok, pesertaId, stIndex, anggota.rincian);
+                        }
+                    }
+                }
+            }, anggotaIdx * 200); // Delay 200ms per anggota
+        });
+    });
+}
 
 function addPegawaiRow(kelompok, subIndex) {
     const container = document.getElementById(`subkelompok-${kelompok}-${subIndex}`);
-
-    const pesertaId = `${kelompok}_${subIndex}_${Date.now()}`;
+    const pesertaId = `${kelompok}_${subIndex}_${Date.now()}_${Math.random()}`;
 
     let options = '<option value="">Pilih Pegawai</option>';
     pegawaiData.forEach(p => {
-        options += `<option value="${p.id}">${p.nama} (${p.nip})</option>`;
+        options += `<option value="${p.id}" data-nama="${p.nama}" data-nip="${p.nip}">${p.nama} (${p.nip})</option>`;
     });
 
     container.insertAdjacentHTML('beforeend', `
@@ -104,7 +207,8 @@ function addPegawaiRow(kelompok, subIndex) {
                 </button>
             </div>
             <div class="card-body">
-                <select name="peserta[${kelompok}][${subIndex}][${pesertaId}][pegawai_id]" class="form-select mb-3">
+                <select name="peserta[${kelompok}][${subIndex}][${pesertaId}][pegawai_id]" 
+                        class="form-select mb-3">
                     ${options}
                 </select>
                 ${renderTable(kelompok, pesertaId, subIndex)}
@@ -118,11 +222,7 @@ function addPegawaiRow(kelompok, subIndex) {
 
 function addNonPegawaiRow(kelompok, subIndex) {
     const container = document.getElementById(`subkelompok-${kelompok}-${subIndex}`);
-
-    const pesertaId = `${kelompok}_${subIndex}_${Date.now()}`;
-    
-    // const container = document.getElementById(`container-${kelompok}`);
-    // const pesertaId = `${kelompok}_${Date.now()}_${pesertaCounter++}`;
+    const pesertaId = `${kelompok}_${subIndex}_${Date.now()}_${Math.random()}`;
 
     container.insertAdjacentHTML('beforeend', `
         <div class="peserta-card border rounded p-3 mb-3" data-peserta-id="${pesertaId}" data-type="nonpegawai">
@@ -198,10 +298,9 @@ function renderTable(kelompok, pesertaId, subIndex) {
 
 function addRincian(kelompok, pesertaId, subIndex) {
     const tbody = document.getElementById(`tbody-${pesertaId}`);
-    const index = Date.now();
+    const index = Date.now() + Math.random();
     const hari = getJumlahHari();
 
-    // ✅ WAJIB ADA
     let jenisOptions = '<option value="">Pilih Jenis Biaya</option>';
     jenisBiayaData.forEach(j => {
         jenisOptions += `<option value="${j.id}">${j.nama_biaya}</option>`;
@@ -251,25 +350,131 @@ function addRincian(kelompok, pesertaId, subIndex) {
             </td>
         </tr>
     `);
-}y
+    
+    // Auto-calculate total
+    const row = tbody.lastElementChild;
+    const volInput = row.querySelector('.vol');
+    const tarifInput = row.querySelector('.tarif');
+    const totalInput = row.querySelector('.total');
+    
+    const updateTotal = () => {
+        const vol = parseFloat(volInput.value) || 0;
+        const tarif = parseFloat(tarifInput.value) || 0;
+        totalInput.value = vol * tarif;
+    };
+    
+    volInput.addEventListener('input', updateTotal);
+    tarifInput.addEventListener('input', updateTotal);
+}
+
+function loadRincianToPeserta(kelompok, pesertaId, subIndex, rincianList) {
+    const tbody = document.getElementById(`tbody-${pesertaId}`);
+    if (!tbody) {
+        console.error(`tbody not found for ${pesertaId}`);
+        return;
+    }
+    
+    console.log(`Loading ${rincianList.length} rincian for ${pesertaId}`);
+    tbody.innerHTML = '';
+    
+    rincianList.forEach(rincian => {
+        const index = Date.now() + Math.random();
+        const hari = getJumlahHari();
+        
+        let jenisOptions = '<option value="">Pilih Jenis Biaya</option>';
+        jenisBiayaData.forEach(j => {
+            const selected = (rincian.jenis_biaya_id == j.id || rincian.jenis == j.id) ? 'selected' : '';
+            jenisOptions += `<option value="${j.id}" ${selected}>${j.nama_biaya}</option>`;
+        });
+        
+        const volume = rincian.volume || rincian.vol || hari;
+        const tarif = rincian.tarif || 0;
+        const total = parseFloat(volume) * parseFloat(tarif);
+        
+        tbody.insertAdjacentHTML('beforeend', `
+            <tr>
+                <td>
+                    <select name="rincian[${kelompok}][${subIndex}][${pesertaId}][${index}][jenis_biaya_id]" 
+                            class="form-select form-select-sm">
+                        ${jenisOptions}
+                    </select>
+                </td>
+                <td>
+                    <input type="text" 
+                        name="rincian[${kelompok}][${subIndex}][${pesertaId}][${index}][uraian]" 
+                        class="form-control form-control-sm"
+                        value="${escapeHtml(rincian.uraian || '')}">
+                </td>
+                <td>
+                    <input type="number" 
+                        name="rincian[${kelompok}][${subIndex}][${pesertaId}][${index}][volume]" 
+                        class="form-control form-control-sm vol" 
+                        value="${volume}">
+                </td>
+                <td>
+                    <input type="text" 
+                        name="rincian[${kelompok}][${subIndex}][${pesertaId}][${index}][satuan]" 
+                        class="form-control form-control-sm" 
+                        value="${escapeHtml(rincian.satuan || 'hari')}">
+                </td>
+                <td>
+                    <input type="number" 
+                        name="rincian[${kelompok}][${subIndex}][${pesertaId}][${index}][tarif]" 
+                        class="form-control form-control-sm tarif"
+                        value="${tarif}">
+                </td>
+                <td>
+                    <input type="number" 
+                        name="rincian[${kelompok}][${subIndex}][${pesertaId}][${index}][total]" 
+                        class="form-control form-control-sm total" 
+                        value="${total}" readonly>
+                </td>
+                <td class="text-center">
+                    <button type="button" 
+                            class="btn btn-sm btn-outline-danger" 
+                            onclick="this.closest('tr').remove()">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `);
+        
+        // Setup event listeners
+        const row = tbody.lastElementChild;
+        const volInput = row.querySelector('.vol');
+        const tarifInput = row.querySelector('.tarif');
+        const totalInput = row.querySelector('.total');
+        
+        const updateTotal = () => {
+            const v = parseFloat(volInput?.value) || 0;
+            const t = parseFloat(tarifInput?.value) || 0;
+            if (totalInput) totalInput.value = v * t;
+        };
+        
+        if (volInput) volInput.addEventListener('input', updateTotal);
+        if (tarifInput) tarifInput.addEventListener('input', updateTotal);
+    });
+}
 
 function toggleCopyToAllButton(kelompok) {
     const container = document.getElementById(`container-${kelompok}`);
-    const pesertaCards = container.querySelectorAll('.peserta-card');
-    const btn = document.getElementById(`btnCopy-${kelompok}`);
-
-    if (btn) {
-        btn.style.display = pesertaCards.length >= 2 ? 'inline-flex' : 'none';
-    }
+    const stCards = container.querySelectorAll('.st-card');
+    
+    stCards.forEach(stCard => {
+        const pesertaCards = stCard.querySelectorAll('.peserta-card');
+        const copyBtn = stCard.querySelector('.btn-outline-info');
+        if (copyBtn) {
+            copyBtn.style.display = pesertaCards.length >= 2 ? 'inline-flex' : 'none';
+        }
+    });
 }
 
 function copyToAllPeserta(kelompok, subIndex) {
-
     const stContainer = document.getElementById(`subkelompok-${kelompok}-${subIndex}`);
     const pesertaCards = stContainer.querySelectorAll('.peserta-card');
 
     if (pesertaCards.length < 2) {
-        alert('Minimal ada 2 peserta');
+        alert('Minimal ada 2 peserta untuk copy');
         return;
     }
 
@@ -277,7 +482,7 @@ function copyToAllPeserta(kelompok, subIndex) {
     const firstTbody = firstPeserta.querySelector('tbody');
 
     if (!firstTbody || firstTbody.querySelectorAll('tr').length === 0) {
-        alert('Peserta pertama belum ada rincian');
+        alert('Peserta pertama belum memiliki rincian biaya');
         return;
     }
 
@@ -292,122 +497,99 @@ function copyToAllPeserta(kelompok, subIndex) {
 
         targetTbody.innerHTML = '';
 
-        firstRows.forEach(row => {
+        firstRows.forEach((row) => {
+            // Clone row
             const clone = row.cloneNode(true);
-
-            const originalFields = row.querySelectorAll('input, select');
-            const cloneFields = clone.querySelectorAll('input, select');
-
-            cloneFields.forEach((field, indexField) => {
-
-                // 🔥 penting: update name biar sesuai pesertaId target
+            
+            const targetId = target.dataset.pesertaId;
+            const firstId = pesertaCards[0].dataset.pesertaId;
+            
+            // Update name attributes dengan ID baru
+            clone.querySelectorAll('select, input').forEach(field => {
                 const name = field.getAttribute('name');
                 if (name) {
-                    const newName = name.replace(
-                        /\[${pesertaCards[0].dataset.pesertaId}\]/,
-                        `[${target.dataset.pesertaId}]`
-                    );
+                    const newName = name.replace(`[${firstId}]`, `[${targetId}]`);
                     field.setAttribute('name', newName);
                 }
-
-                // copy value
-                field.value = originalFields[indexField].value;
             });
-
+            
+            // PASTIKAN: Simpan nilai select sebelum diappend
+            const selectElement = clone.querySelector('select');
+            const selectedValue = row.querySelector('select').value;
+            
+            // Append ke target
             targetTbody.appendChild(clone);
+            
+            // SET ULANG nilai select setelah diappend
+            if (selectElement && selectedValue) {
+                selectElement.value = selectedValue;
+            }
+            
+            // Re-attach event listeners
+            const newRow = targetTbody.lastElementChild;
+            const volInput = newRow.querySelector('.vol');
+            const tarifInput = newRow.querySelector('.tarif');
+            const totalInput = newRow.querySelector('.total');
+            
+            const updateTotal = () => {
+                const vol = parseFloat(volInput?.value) || 0;
+                const tarif = parseFloat(tarifInput?.value) || 0;
+                if (totalInput) totalInput.value = vol * tarif;
+            };
+            
+            if (volInput) {
+                volInput.removeEventListener('input', updateTotal);
+                volInput.addEventListener('input', updateTotal);
+            }
+            if (tarifInput) {
+                tarifInput.removeEventListener('input', updateTotal);
+                tarifInput.addEventListener('input', updateTotal);
+            }
+            
+            // Hitung ulang total
+            if (totalInput) {
+                const vol = parseFloat(volInput?.value) || 0;
+                const tarif = parseFloat(tarifInput?.value) || 0;
+                totalInput.value = vol * tarif;
+            }
         });
-
+        
         copied++;
     }
 
-    alert(`Berhasil copy ke ${copied} peserta di ST ini`);
-}
-
-function addSubKelompok(kelompok) {
-    const container = document.getElementById(`container-${kelompok}`);
-    const index = subKelompokCounter++;
-
-    container.insertAdjacentHTML('beforeend', `
-        <div class="card border mb-3 st-card">
-            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>Sub Kelompok ST</strong>
-                    <small class="text-muted d-block">Klik untuk buka detail peserta</small>
-                </div>
-
-                <div class="d-flex gap-2">
-                    <button type="button"
-    class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1 toggle-btn"
-    data-bs-toggle="collapse"
-    data-bs-target="#collapse-${kelompok}-${index}">
+    alert(`Berhasil menyalin rincian ke ${copied} peserta lainnya`);
     
-    Detail 
-    <i class="bi bi-chevron-down"></i>
-</button>
-
-                    <button type="button"
-                        class="btn btn-sm btn-outline-danger"
-                        onclick="this.closest('.card').remove()">
-                        Hapus
-                    </button>
-                </div>
-            </div>
-
-            <div class="collapse show" id="collapse-${kelompok}-${index}">
-                <div class="card-body">
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label>Nomor ST</label>
-                            <input type="text"
-                                name="kelompok[${kelompok}][${index}][nomor_st]"
-                                class="form-control">
-                        </div>
-
-                        <div class="col-md-6">
-                            <label>Tanggal ST</label>
-                            <input type="date"
-                                name="kelompok[${kelompok}][${index}][tanggal_st]"
-                                class="form-control">
-                        </div>
-                    </div>
-
-                    <div id="subkelompok-${kelompok}-${index}"></div>
-
-                    <div class="d-flex gap-2">
-                        <button type="button"
-                            class="btn btn-sm btn-outline-success"
-                            onclick="addPegawaiRow('${kelompok}', ${index})">
-                            + Pegawai
-                        </button>
-
-                        <button type="button"
-                            class="btn btn-sm btn-outline-success"
-                            onclick="addNonPegawaiRow('${kelompok}', ${index})">
-                            + Non Pegawai
-                        </button>
-
-                        <button type="button"
-                            class="btn btn-sm btn-outline-info"
-                            onclick="copyToAllPeserta('${kelompok}', ${index})">
-                            <i class="bi bi-files"></i> Copy ke Semua
-                        </button>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-    `);
-
-    return index;
+    // Trigger update review
+    if (typeof updateReview === 'function') {
+        const step5 = document.getElementById('step5');
+        if (step5 && step5.classList.contains('active')) {
+            updateReview();
+        }
+    }
 }
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+// Expose ke global
+window.loadEditData = loadEditData;
+window.addSubKelompok = addSubKelompok;
+window.addPegawaiRow = addPegawaiRow;
+window.addNonPegawaiRow = addNonPegawaiRow;
+window.addRincian = addRincian;
+window.loadRincianToPeserta = loadRincianToPeserta;
 
 document.addEventListener('DOMContentLoaded', function () {
-
     document.addEventListener('shown.bs.collapse', function (e) {
         const collapseEl = e.target;
         const btn = document.querySelector(`[data-bs-target="#${collapseEl.id}"]`);
-
         if (btn) {
             const icon = btn.querySelector('i');
             icon.classList.remove('bi-chevron-down');
@@ -418,17 +600,124 @@ document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('hidden.bs.collapse', function (e) {
         const collapseEl = e.target;
         const btn = document.querySelector(`[data-bs-target="#${collapseEl.id}"]`);
-
         if (btn) {
             const icon = btn.querySelector('i');
             icon.classList.remove('bi-chevron-up');
             icon.classList.add('bi-chevron-down');
         }
     });
-
 });
 
+// Fungsi untuk load data edit dengan callback
+function loadEditDataWithCallback(kelompok, kelompokDataArray, onComplete) {
+    console.log(`loadEditDataWithCallback called for ${kelompok}:`, kelompokDataArray);
+    
+    if (!kelompokDataArray || kelompokDataArray.length === 0) {
+        if (onComplete) onComplete();
+        return;
+    }
+    
+    // Bersihkan container
+    const container = document.getElementById(`container-${kelompok}`);
+    if (container) {
+        container.innerHTML = '';
+    }
+    
+    // Reset counter
+    subKelompokCounter = 1;
+    
+    // Hitung total anggota yang akan di-load
+    let totalAnggota = 0;
+    kelompokDataArray.forEach(kelompokData => {
+        totalAnggota += (kelompokData.items || []).length;
+    });
+    
+    let loadedAnggota = 0;
+    
+    // Fungsi untuk cek apakah semua anggota sudah load
+    function checkAnggotaLoaded() {
+        loadedAnggota++;
+        console.log(`[${kelompok}] Loaded anggota: ${loadedAnggota}/${totalAnggota}`);
+        if (loadedAnggota >= totalAnggota && onComplete) {
+            onComplete();
+        }
+    }
+    
+    // Loop setiap kelompok data
+    kelompokDataArray.forEach((kelompokData, idx) => {
+        // Buat subkelompok tanpa data anggota dulu
+        const stIndex = addSubKelompok(kelompok, {
+            nomor_st: kelompokData.nomor_st || '',
+            tanggal_st: kelompokData.tanggal_st || ''
+        });
+        
+        // Ambil items (anggota)
+        const items = kelompokData.items || [];
+        
+        if (items.length === 0 && checkAnggotaLoaded) {
+            // Tidak ada anggota, tetap panggil callback
+            for (let i = 0; i < items.length; i++) {
+                checkAnggotaLoaded();
+            }
+        }
+        
+        // Tambahkan anggota satu per satu dengan delay
+        items.forEach((anggota, anggotaIdx) => {
+            setTimeout(() => {
+                if (anggota.type === 'pegawai' || anggota.pegawai_id) {
+                    // Tambah pegawai
+                    const pesertaId = addPegawaiRow(kelompok, stIndex);
+                    
+                    // Isi data pegawai
+                    const subKelompokDiv = document.getElementById(`subkelompok-${kelompok}-${stIndex}`);
+                    const pesertaCard = subKelompokDiv.querySelector(`.peserta-card[data-peserta-id="${pesertaId}"]`);
+                    
+                    if (pesertaCard) {
+                        const select = pesertaCard.querySelector('select');
+                        if (select && (anggota.pegawai_id || anggota.id)) {
+                            select.value = anggota.pegawai_id || anggota.id;
+                        }
+                        
+                        // Load rincian
+                        if (anggota.rincian && anggota.rincian.length > 0) {
+                            loadRincianToPeserta(kelompok, pesertaId, stIndex, anggota.rincian);
+                        }
+                    }
+                } else {
+                    // Tambah non pegawai
+                    const pesertaId = addNonPegawaiRow(kelompok, stIndex);
+                    
+                    // Isi data non pegawai
+                    const subKelompokDiv = document.getElementById(`subkelompok-${kelompok}-${stIndex}`);
+                    const pesertaCard = subKelompokDiv.querySelector(`.peserta-card[data-peserta-id="${pesertaId}"]`);
+                    
+                    if (pesertaCard) {
+                        const namaInput = pesertaCard.querySelector('input[name*="[nama]"]');
+                        const nikInput = pesertaCard.querySelector('input[name*="[nik]"]');
+                        const instansiInput = pesertaCard.querySelector('input[name*="[instansi]"]');
+                        
+                        if (namaInput) namaInput.value = anggota.nama || '';
+                        if (nikInput) nikInput.value = anggota.nik || '';
+                        if (instansiInput) instansiInput.value = anggota.instansi || '';
+                        
+                        // Load rincian
+                        if (anggota.rincian && anggota.rincian.length > 0) {
+                            loadRincianToPeserta(kelompok, pesertaId, stIndex, anggota.rincian);
+                        }
+                    }
+                }
+                
+                // Panggil callback setelah anggota selesai di-load
+                if (checkAnggotaLoaded) {
+                    checkAnggotaLoaded();
+                }
+            }, anggotaIdx * 200);
+        });
+    });
+}
 
+// Expose fungsi baru ke global
+window.loadEditDataWithCallback = loadEditDataWithCallback;
 </script>
 
 <style>
@@ -436,4 +725,10 @@ document.addEventListener('DOMContentLoaded', function () {
 .table-responsive table { min-width: 950px; width: max-content; }
 .table th, .table td { white-space: nowrap; }
 .table th:nth-child(2), .table td:nth-child(2) { min-width: 280px; }
+.st-card {
+    transition: all 0.3s ease;
+}
+.st-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
 </style>

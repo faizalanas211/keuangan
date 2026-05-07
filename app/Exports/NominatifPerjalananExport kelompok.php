@@ -2,7 +2,6 @@
 
 namespace App\Exports;
 
-use App\Models\JenisBiaya;
 use App\Models\PejabatPeriode;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -27,24 +26,37 @@ public function __construct($perjalanan)
     Carbon::setLocale('id');
     $this->perjalanan = $perjalanan;
 
-    $this->columns = JenisBiaya::all()->map(function ($j) use ($perjalanan) {
+    // ambil semua rincian unik (jenis + uraian)
+    $this->columns = collect()
 
-        $sample = collect()
-            ->merge($perjalanan->pegawaiPerjalanan->flatMap->rincian)
-            ->merge($perjalanan->nonpegawai->flatMap->rincian)
-            ->firstWhere('jenis_biaya_id', $j->id);
+    // dari pegawai
+    ->merge(
+        $perjalanan->pegawaiPerjalanan
+            ->flatMap(fn($pp) => $pp->rincian)
+    )
 
-        $uraian = $sample->uraian ?? null;
+    // dari nonpegawai
+    ->merge(
+        $perjalanan->nonpegawai
+            ->flatMap(fn($np) => $np->rincian)
+    )
+
+    ->groupBy('jenis_biaya_id')
+    ->map(function ($items) {
+
+        $first = $items->first();
 
         return [
-            'jenis_id' => $j->id,
-            'label' => strtoupper(
-                $j->nama_biaya . ($uraian ? " ($uraian)" : "")
+            'jenis_id' => $first->jenis_biaya_id,
+            'label'    => strtoupper($first->jenisBiaya->nama_biaya),
+            'is_transport' => str_contains(
+                strtolower($first->jenisBiaya->nama_biaya),
+                'transport'
             ),
-            'is_transport' => str_contains(strtolower($j->nama_biaya), 'transport'),
-            'satuan' => $sample->satuan ?? 'VOL'
+            'satuan' => $first->satuan ?? 'VOL', 
         ];
-    });
+    })
+    ->values();
 }
 
     public function startCell(): string
@@ -84,13 +96,14 @@ public function __construct($perjalanan)
             if ($items->isNotEmpty()) {
 
                 if ($col['is_transport']) {
-
+                    // 🔥 transport → langsung total
                     $total = $items->sum('total');
-                    $row[] = $total ?: '-';
+
+                    $row[] = $total;
                     $totalAll += $total;
 
                 } else {
-
+                    // 🔥 selain transport
                     $volume = $items->sum('volume');
                     $tarif  = $items->avg('tarif');
                     $total  = $items->sum('total');
@@ -128,7 +141,7 @@ public function __construct($perjalanan)
 
         $row = [
             $no++,
-            $np->nama,
+            $np->nama . ' (Non-Pegawai)',
             $this->perjalanan->dari_kota,
             $this->perjalanan->tujuan_kota,
             $jadwal,
@@ -138,41 +151,24 @@ public function __construct($perjalanan)
 
         foreach ($this->columns as $col) {
 
-            $items = $np->rincian->where('jenis_biaya_id', $col['jenis_id']);
+            $r = $np->rincian->first(function ($item) use ($col) {
+                return $item->jenis_biaya_id == $col['jenis_id']
+                    && ($item->uraian ?? '-') == $col['uraian'];
+            });
 
-            if ($items->isNotEmpty()) {
+            if ($r) {
+                $row[] = (int) $r->volume;
+                $row[] = $r->tarif;
+                $row[] = $r->total;
 
-                if ($col['is_transport']) {
-
-                    $total = $items->sum('total');
-                    $row[] = $total ?: '-';
-                    $totalAll += $total;
-
-                } else {
-
-                    $volume = $items->sum('volume');
-                    $tarif  = $items->avg('tarif');
-                    $total  = $items->sum('total');
-
-                    $row[] = $volume ?: '-';
-                    $row[] = $tarif ?: '-';
-                    $row[] = $total ?: '-';
-
-                    $totalAll += $total;
-                }
-
+                $totalAll += $r->total ?? 0;
             } else {
-
-                if ($col['is_transport']) {
-                    $row[] = '-';
-                } else {
-                    $row[] = '-';
-                    $row[] = '-';
-                    $row[] = '-';
-                }
+                $row[] = '-';
+                $row[] = '-';
+                $row[] = '-';
             }
         }
-        
+
         $row[] = $totalAll ?: '-';
         $row[] = '';
         $row[] = $this->perjalanan->nama_kegiatan;

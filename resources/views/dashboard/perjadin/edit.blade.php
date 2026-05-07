@@ -1,653 +1,535 @@
 @extends('layouts.admin')
 
-@section('breadcrumb')
-<li class="breadcrumb-item">
-    <a href="{{ route('perjadin.index') }}">Data Perjalanan Dinas</a>
-</li>
-<li class="breadcrumb-item active text-success fw-semibold">
-    Edit Perjalanan Dinas
-</li>
-@endsection
-
 @section('content')
-
 <style>
-.card-shadow {
-    border: none;
-    border-radius: 14px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+.step {
+    display: none;
 }
-.section-title {
-    font-weight: 600;
-    color: #16a34a;
+.step.active {
+    display: block;
 }
-.peserta-card {
-    transition: all 0.2s;
+.step-indicator {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    position: relative;
 }
-.peserta-card:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+.step-indicator::before {
+    content: '';
+    position: absolute;
+    top: 30px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #dee2e6;
+    z-index: 1;
+}
+.step-item {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+}
+.step-circle {
+    width: 50px;
+    height: 50px;
+    background: #dee2e6;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 10px;
+}
+.step-item.active .step-circle {
+    background: #16a34a;
+}
+.step-item.completed .step-circle {
+    background: #16a34a;
+}
+.step-item.completed .step-circle::after {
+    content: '✓';
+}
+.step-label {
+    font-size: 14px;
+    font-weight: 500;
 }
 </style>
 
-<form action="{{ route('perjadin.update', $perjalanan->id) }}" method="POST">
+<form id="multiStepForm" action="{{ route('perjadin.update', $perjalanan->id) }}" method="POST">
 @csrf
 @method('PUT')
 
-{{-- ================= INFORMASI ================= --}}
-<div class="card card-shadow mb-4">
-    <div class="card-body">
-        <h5 class="section-title mb-3">Informasi Perjalanan</h5>
-        
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label>Tingkat Perjalanan</label>
-                <input type="text" name="tingkat_perjalanan" class="form-control"
-                    value="{{ old('tingkat_perjalanan', $perjalanan->tingkat_perjalanan) }}">
-            </div>
-            <div class="col-md-6">
-                <label>Alat Angkutan <span class="text-danger">*</span></label>
-                <input type="text" name="alat_angkutan" class="form-control"
-                    value="{{ old('alat_angkutan', $perjalanan->alat_angkutan) }}" required>
-            </div>
-        </div>
-
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label>Dari Kota <span class="text-danger">*</span></label>
-                <input type="text" name="dari_kota" class="form-control"
-                    value="{{ old('dari_kota', $perjalanan->dari_kota) }}" required>
-            </div>
-            <div class="col-md-6">
-                <label>Tujuan Kota <span class="text-danger">*</span></label>
-                <input type="text" name="tujuan_kota" class="form-control"
-                    value="{{ old('tujuan_kota', $perjalanan->tujuan_kota) }}" required>
-            </div>
-        </div>
-
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label>Tanggal Mulai <span class="text-danger">*</span></label>
-                <input type="date" id="tanggal_mulai" name="tanggal_mulai" class="form-control"
-                    value="{{ old('tanggal_mulai', \Carbon\Carbon::parse($perjalanan->tanggal_mulai)->format('Y-m-d')) }}" required>
-            </div>
-            <div class="col-md-6">
-                <label>Tanggal Akhir <span class="text-danger">*</span></label>
-                <input type="date" id="tanggal_akhir" name="tanggal_akhir" class="form-control"
-                    value="{{ old('tanggal_akhir', \Carbon\Carbon::parse($perjalanan->tanggal_akhir)->format('Y-m-d')) }}" required>
-            </div>
-        </div>
-
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label>Tanggal Terima <span class="text-danger">*</span></label>
-                <input type="date" id="tanggal_terima" name="tanggal_terima" class="form-control"
-                    value="{{ old('tanggal_terima', $perjalanan->tanggal_terima ? \Carbon\Carbon::parse($perjalanan->tanggal_terima)->format('Y-m-d') : '') }}" required>
-            </div>
-            <div class="col-md-6">
-                <label>Kode MAK</label>
-                <input type="text" name="kode_mak" class="form-control"
-                    value="{{ old('kode_mak', $perjalanan->kode_mak) }}">
-            </div>
-        </div>
-
-        <div class="mb-3">
-            <label>Output: Akun: Biaya Kegiatan dalam rangka komponen/subkomponen</label>
-            <textarea name="akun_biaya" class="form-control" rows="3">{{ old('akun_biaya', $perjalanan->akun_biaya) }}</textarea>
-        </div>
-
-        <div class="mb-3">
-            <label>Nama Kegiatan <span class="text-danger">*</span></label>
-            <textarea name="nama_kegiatan" class="form-control" rows="3" required>{{ old('nama_kegiatan', $perjalanan->nama_kegiatan) }}</textarea>
-        </div>
+{{-- Step Indicator --}}
+<div class="step-indicator mb-5">
+    <div class="step-item active" data-step="1">
+        <div class="step-circle">1</div>
+        <div class="step-label">Informasi Perjalanan</div>
     </div>
+    <div class="step-item" data-step="2">
+        <div class="step-circle">2</div>
+        <div class="step-label">Panitia</div>
+    </div>
+    <div class="step-item" data-step="3">
+        <div class="step-circle">3</div>
+        <div class="step-label">Peserta</div>
+    </div>
+    <div class="step-item" data-step="4">
+        <div class="step-circle">4</div>
+        <div class="step-label">Narasumber</div>
+    </div>
+    <!-- <div class="step-item" data-step="5">
+        <div class="step-circle">5</div>
+        <div class="step-label">Review & Submit</div>
+    </div> -->
 </div>
 
-{{-- ================= PESERTA (TAB KELOMPOK) ================= --}}
-<div class="card card-shadow mb-4">
-    <div class="card-body">
-
-        <h5 class="section-title mb-3">Peserta Perjalanan</h5>
-
-        {{-- NAV TAB --}}
-        <ul class="nav nav-tabs mb-3">
-            <li class="nav-item">
-                <button type="button" class="nav-link active" data-bs-toggle="tab" data-bs-target="#panitia">
-                    Panitia
-                </button>
-            </li>
-            <li class="nav-item">
-                <button type="button" class="nav-link" data-bs-toggle="tab" data-bs-target="#peserta">
-                    Peserta
-                </button>
-            </li>
-            <li class="nav-item">
-                <button type="button" class="nav-link" data-bs-toggle="tab" data-bs-target="#narasumber">
-                    Narasumber
-                </button>
-            </li>
-        </ul>
-
-        <div class="tab-content">
-
-            {{-- ================= PANITIA ================= --}}
-            <div class="tab-pane fade show active" id="panitia">
-                @include('dashboard.perjadin.partials.kelompok_edit', ['key' => 'panitia', 'label' => 'Panitia', 'tipe' => 'pegawai', 'kelompokData' => $kelompokData['panitia'] ?? null])
-            </div>
-
-            {{-- ================= PESERTA ================= --}}
-            <div class="tab-pane fade" id="peserta">
-                @include('dashboard.perjadin.partials.kelompok_edit', ['key' => 'peserta', 'label' => 'Peserta', 'tipe' => 'pegawai', 'kelompokData' => $kelompokData['peserta'] ?? null])
-            </div>
-
-            {{-- ================= NARASUMBER ================= --}}
-            <div class="tab-pane fade" id="narasumber">
-                @include('dashboard.perjadin.partials.kelompok_edit', ['key' => 'narasumber', 'label' => 'Narasumber', 'tipe' => 'nonpegawai', 'kelompokData' => $kelompokData['narasumber'] ?? null])
-            </div>
-
-        </div>
-
-    </div>
+{{-- STEP 1: Informasi Perjalanan --}}
+<div class="step active" id="step1">
+    @include('dashboard.perjadin.partials.step1_informasi')
 </div>
 
-<div class="text-end mb-5">
-    <button class="btn btn-success px-4">Update</button>
+{{-- STEP 2: Panitia --}}
+<div class="step" id="step2">
+    @include('dashboard.perjadin.partials.step_kelompok', [
+        'tipe' => 'panitia',
+        'title' => 'Panitia Perjalanan Dinas',
+        'is_pegawai' => true,
+        'kelompokData' => []
+    ])
+</div>
+
+{{-- STEP 3: Peserta --}}
+<div class="step" id="step3">
+    @include('dashboard.perjadin.partials.step_kelompok', [
+        'tipe' => 'peserta',
+        'title' => 'Peserta Perjalanan Dinas',
+        'is_pegawai' => true,
+        'kelompokData' => []
+    ])
+</div>
+
+{{-- STEP 4: Narasumber --}}
+<div class="step" id="step4">
+    @include('dashboard.perjadin.partials.step_kelompok', [
+        'tipe' => 'narasumber',
+        'title' => 'Narasumber',
+        'is_pegawai' => false,
+        'kelompokData' => []
+    ])
+</div>
+
+{{-- STEP 5: Review --}}
+<!-- <div class="step" id="step5">
+    @include('dashboard.perjadin.partials.step_review')
+</div> -->
+
+{{-- Navigation Buttons --}}
+<div class="d-flex justify-content-between mt-4">
+    <button type="button" class="btn btn-secondary" id="prevBtn" style="display:none;">← Sebelumnya</button>
+    <button type="button" class="btn btn-success" id="nextBtn">Selanjutnya →</button>
+    <button type="submit" class="btn btn-success" id="submitBtn" style="display:none;">Simpan Perubahan</button>
 </div>
 
 </form>
 
 <script>
-const jenisBiayaData = @json($jenisBiaya);
-const pegawaiData = @json($pegawai);
-const existingKelompokData = @json($kelompokData);
-let pesertaCounter = 0;
+// Data awal dari controller - sudah dalam format yang benar
+const initialData = @json($initialData);
+const isEdit = true;
 
-function getJumlahHari() {
-    const mulai = document.getElementById('tanggal_mulai').value;
-    const akhir = document.getElementById('tanggal_akhir').value;
-    if (!mulai || !akhir) return 0;
-    const tglMulai = new Date(mulai);
-    const tglAkhir = new Date(akhir);
-    const selisih = (tglAkhir - tglMulai) / (1000 * 60 * 60 * 24);
-    return selisih >= 0 ? selisih + 1 : 0;
-}
+// Global state
+const formState = {
+    step1: {},
+    panitia: [],
+    peserta: [],
+    narasumber: []
+};
 
-document.addEventListener("DOMContentLoaded", function() {
-    loadExistingPeserta();
+let currentStep = 1;
+const totalSteps = 4;
+
+// Load data saat halaman siap
+window.addEventListener('load', () => {
+    localStorage.removeItem('perjadin_form');
+    
+    // Beri sedikit delay untuk memastikan DOM ready
+    setTimeout(() => {
+        loadInitialData();
+    }, 100);
 });
 
-function loadExistingPeserta() {
-    if (!existingKelompokData) return;
+// Fungsi untuk load data edit
+// Di dalam edit.blade.php, update fungsi loadInitialData
+function loadInitialData() {
+    console.log('Loading initial data...');
     
-    // Load untuk setiap kelompok
-    ['panitia', 'peserta', 'narasumber'].forEach(kelompok => {
-        const data = existingKelompokData[kelompok];
-        if (data && data.pegawai) {
-            data.pegawai.forEach(pegawai => {
-                addPegawaiRowFromExisting(kelompok, pegawai);
-            });
-        }
-        if (data && data.nonpegawai) {
-            data.nonpegawai.forEach(nonpegawai => {
-                addNonPegawaiRowFromExisting(kelompok, nonpegawai);
-            });
-        }
-    });
-}
-
-function addPegawaiRowFromExisting(kelompok, data) {
-    const container = document.getElementById(`container-${kelompok}`);
-    const pesertaId = data.peserta_id || `${kelompok}_${Date.now()}_${pesertaCounter++}`;
-
-    let options = '<option value="">Pilih Pegawai</option>';
-    pegawaiData.forEach(p => {
-        const selected = (p.id == data.pegawai_id) ? 'selected' : '';
-        options += `<option value="${p.id}" ${selected}>${p.nama} (${p.nip})</option>`;
-    });
-
-    // Build rincian rows from existing data
-    let rincianRows = '';
-    if (data.rincian && data.rincian.length > 0) {
-        data.rincian.forEach((r, idx) => {
-            const index = Date.now() + idx;
-            rincianRows += buildRincianRow(kelompok, pesertaId, index, r);
-        });
-    }
-
-    container.insertAdjacentHTML('beforeend', `
-        <div class="peserta-card card mb-3 border" data-peserta-id="${pesertaId}" data-existing-id="${data.id || ''}">
-            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                <strong class="text-primary">
-                    <i class="bi bi-person-badge me-1"></i> ${kelompok.toUpperCase()} - Pegawai
-                </strong>
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePeserta(this, '${kelompok}', '${data.id || ''}', 'pegawai')">
-                    <i class="bi bi-trash me-1"></i> Hapus
-                </button>
-            </div>
-            <div class="card-body">
-                <select name="peserta[${kelompok}][${pesertaId}][pegawai_id]" class="form-select mb-3">
-                    ${options}
-                </select>
-                <input type="hidden" name="peserta[${kelompok}][${pesertaId}][existing_id]" value="${data.id || ''}">
-                ${renderTableWithRows(kelompok, pesertaId, rincianRows)}
-            </div>
-        </div>
-    `);
-}
-
-function addNonPegawaiRowFromExisting(kelompok, data) {
-    const container = document.getElementById(`container-${kelompok}`);
-    const pesertaId = data.peserta_id || `${kelompok}_${Date.now()}_${pesertaCounter++}`;
-
-    // Build rincian rows from existing data
-    let rincianRows = '';
-    if (data.rincian && data.rincian.length > 0) {
-        data.rincian.forEach((r, idx) => {
-            const index = Date.now() + idx;
-            rincianRows += buildRincianRow(kelompok, pesertaId, index, r);
-        });
-    }
-
-    container.insertAdjacentHTML('beforeend', `
-        <div class="peserta-card border rounded p-3 mb-3" data-peserta-id="${pesertaId}" data-existing-id="${data.id || ''}">
-            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                <strong class="text-success">
-                    <i class="bi bi-person me-1"></i> ${kelompok.toUpperCase()} - Non Pegawai
-                </strong>
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePeserta(this, '${kelompok}', '${data.id || ''}', 'nonpegawai')">
-                    <i class="bi bi-trash me-1"></i> Hapus
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="row g-3 mb-3">
-                    <div class="col-md-4">
-                        <label class="form-label small text-secondary fw-semibold">Nama Lengkap</label>
-                        <input type="text"
-                            name="peserta[${kelompok}][${pesertaId}][nama]"
-                            class="form-control"
-                            value="${data.nama || ''}"
-                            placeholder="Masukkan nama lengkap">
-                        <input type="hidden" name="peserta[${kelompok}][${pesertaId}][existing_id]" value="${data.id || ''}">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small text-secondary fw-semibold">NIP / NIK</label>
-                        <input type="text"
-                            name="peserta[${kelompok}][${pesertaId}][nik]"
-                            class="form-control"
-                            value="${data.nik || ''}"
-                            placeholder="Masukkan NIP / NIK">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small text-secondary fw-semibold">Instansi / Jabatan</label>
-                        <input type="text"
-                            name="peserta[${kelompok}][${pesertaId}][instansi]"
-                            class="form-control"
-                            value="${data.instansi || ''}"
-                            placeholder="Masukkan instansi atau jabatan">
-                    </div>
-                </div>
-                ${renderTableWithRows(kelompok, pesertaId, rincianRows)}
-            </div>
-        </div>
-    `);
-}
-
-function buildRincianRow(kelompok, pesertaId, index, r = null) {
-    let jenisOptions = '<option value="">Pilih Jenis Biaya</option>';
-    jenisBiayaData.forEach(j => {
-        const selected = (r && j.id == r.jenis_biaya_id) ? 'selected' : '';
-        jenisOptions += `<option value="${j.id}" ${selected}>${j.nama_biaya}</option>`;
-    });
-
-    return `
-        <tr class="align-middle">
-            <td>
-                <select name="rincian[${kelompok}][${pesertaId}][${index}][jenis_biaya_id]" 
-                        class="form-select form-select-sm">
-                    ${jenisOptions}
-                </select>
-            </td>
-            <td>
-                <input type="text" 
-                       name="rincian[${kelompok}][${pesertaId}][${index}][uraian]" 
-                       class="form-control form-control-sm"
-                       value="${r?.uraian || ''}"
-                       placeholder="Uraian">
-            </td>
-            <td>
-                <input type="number" 
-                       name="rincian[${kelompok}][${pesertaId}][${index}][volume]" 
-                       class="form-control form-control-sm vol" 
-                       value="${r?.volume || getJumlahHari()}">
-            </td>
-            <td>
-                <input type="text" 
-                       name="rincian[${kelompok}][${pesertaId}][${index}][satuan]" 
-                       class="form-control form-control-sm" 
-                       value="${r?.satuan || 'hari'}">
-            </td>
-            <td>
-                <input type="number" 
-                       name="rincian[${kelompok}][${pesertaId}][${index}][tarif]" 
-                       class="form-control form-control-sm tarif"
-                       value="${r?.tarif || ''}"
-                       placeholder="0">
-            </td>
-            <td>
-                <input type="number" 
-                       name="rincian[${kelompok}][${pesertaId}][${index}][total]" 
-                       class="form-control form-control-sm total" 
-                       readonly
-                       value="${r?.total || ''}"
-                       placeholder="0">
-            </td>
-            <td class="text-center">
-                <button type="button" 
-                        class="btn btn-sm btn-outline-danger" 
-                        onclick="this.closest('tr').remove()">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </td>
-        </tr>
-    `;
-}
-
-function renderTableWithRows(kelompok, pesertaId, existingRows = '') {
-    return `
-        <div class="mt-3">
-            <button type="button" class="btn btn-sm btn-outline-success mb-3" onclick="addRincian('${kelompok}','${pesertaId}')">
-                <i class="bi bi-plus-circle me-1"></i> Tambah Rincian
-            </button>
-
-            <div class="table-responsive">
-                <table class="table table-sm table-bordered table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="width:15%">Jenis</th>
-                            <th style="width:25%">Uraian</th>
-                            <th style="width:10%">Vol</th>
-                            <th style="width:10%">Satuan</th>
-                            <th style="width:15%">Tarif</th>
-                            <th style="width:15%">Total</th>
-                            <th style="width:10%"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody-${pesertaId}">
-                        ${existingRows}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
-}
-
-function addPegawaiRow(kelompok) {
-    const container = document.getElementById(`container-${kelompok}`);
-    const pesertaId = `${kelompok}_${Date.now()}_${pesertaCounter++}`;
-
-    let options = '<option value="">Pilih Pegawai</option>';
-    pegawaiData.forEach(p => {
-        options += `<option value="${p.id}">${p.nama} (${p.nip})</option>`;
-    });
-
-    container.insertAdjacentHTML('beforeend', `
-        <div class="peserta-card card mb-3 border" data-peserta-id="${pesertaId}">
-            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                <strong class="text-primary">
-                    <i class="bi bi-person-badge me-1"></i> ${kelompok.toUpperCase()} - Pegawai
-                </strong>
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.peserta-card').remove()">
-                    <i class="bi bi-trash me-1"></i> Hapus
-                </button>
-            </div>
-            <div class="card-body">
-                <select name="peserta[${kelompok}][${pesertaId}][pegawai_id]" class="form-select mb-3">
-                    ${options}
-                </select>
-                ${renderTable(kelompok, pesertaId)}
-            </div>
-        </div>
-    `);
-
-    toggleCopyToAllButton(kelompok);
-}
-
-function addNonPegawaiRow(kelompok) {
-    const container = document.getElementById(`container-${kelompok}`);
-    const pesertaId = `${kelompok}_${Date.now()}_${pesertaCounter++}`;
-
-    container.insertAdjacentHTML('beforeend', `
-        <div class="peserta-card border rounded p-3 mb-3" data-peserta-id="${pesertaId}">
-            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                <strong class="text-success">
-                    <i class="bi bi-person me-1"></i> ${kelompok.toUpperCase()} - Non Pegawai
-                </strong>
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.peserta-card').remove()">
-                    <i class="bi bi-trash me-1"></i> Hapus
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="row g-3 mb-3">
-                    <div class="col-md-4">
-                        <label class="form-label small text-secondary fw-semibold">Nama Lengkap</label>
-                        <input type="text"
-                            name="peserta[${kelompok}][${pesertaId}][nama]"
-                            class="form-control"
-                            placeholder="Masukkan nama lengkap">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small text-secondary fw-semibold">NIP / NIK</label>
-                        <input type="text"
-                            name="peserta[${kelompok}][${pesertaId}][nik]"
-                            class="form-control"
-                            placeholder="Masukkan NIP / NIK">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small text-secondary fw-semibold">Instansi / Jabatan</label>
-                        <input type="text"
-                            name="peserta[${kelompok}][${pesertaId}][instansi]"
-                            class="form-control"
-                            placeholder="Masukkan instansi atau jabatan">
-                    </div>
-                </div>
-                ${renderTable(kelompok, pesertaId)}
-            </div>
-        </div>
-    `);
-
-    toggleCopyToAllButton(kelompok);
-}
-
-function renderTable(kelompok, pesertaId) {
-    return `
-        <div class="mt-3">
-            <button type="button" class="btn btn-sm btn-outline-success mb-3" onclick="addRincian('${kelompok}','${pesertaId}')">
-                <i class="bi bi-plus-circle me-1"></i> Tambah Rincian
-            </button>
-
-            <div class="table-responsive">
-                <table class="table table-sm table-bordered table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="width:15%">Jenis</th>
-                            <th style="width:25%">Uraian</th>
-                            <th style="width:10%">Vol</th>
-                            <th style="width:10%">Satuan</th>
-                            <th style="width:15%">Tarif</th>
-                            <th style="width:15%">Total</th>
-                            <th style="width:10%"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody-${pesertaId}"></tbody>
-                </table>
-            </div>
-        </div>
-    `;
-}
-
-function addRincian(kelompok, pesertaId) {
-    const tbody = document.getElementById(`tbody-${pesertaId}`);
-    if (!tbody) return;
+    // Load step 1 data
+    renderStep1(initialData.step1);
     
-    const index = Date.now();
-    const hari = getJumlahHari();
-
-    let jenisOptions = '<option value="">Pilih Jenis Biaya</option>';
-    jenisBiayaData.forEach(j => {
-        jenisOptions += `<option value="${j.id}">${j.nama_biaya}</option>`;
+    // Reset semua container terlebih dahulu
+    ['panitia', 'peserta', 'narasumber'].forEach(tipe => {
+        const container = document.getElementById(`container-${tipe}`);
+        if (container) container.innerHTML = '';
     });
-
-    tbody.insertAdjacentHTML('beforeend', `
-        <tr class="align-middle">
-            <td>
-                <select name="rincian[${kelompok}][${pesertaId}][${index}][jenis_biaya_id]" 
-                        class="form-select form-select-sm">
-                    ${jenisOptions}
-                </select>
-            </td>
-            <td>
-                <input type="text" 
-                       name="rincian[${kelompok}][${pesertaId}][${index}][uraian]" 
-                       class="form-control form-control-sm"
-                       placeholder="Uraian">
-            </td>
-            <td>
-                <input type="number" 
-                       name="rincian[${kelompok}][${pesertaId}][${index}][volume]" 
-                       class="form-control form-control-sm vol" 
-                       value="${hari}">
-            </td>
-            <td>
-                <input type="text" 
-                       name="rincian[${kelompok}][${pesertaId}][${index}][satuan]" 
-                       class="form-control form-control-sm" 
-                       value="hari">
-            </td>
-            <td>
-                <input type="number" 
-                       name="rincian[${kelompok}][${pesertaId}][${index}][tarif]" 
-                       class="form-control form-control-sm tarif"
-                       placeholder="0">
-            </td>
-            <td>
-                <input type="number" 
-                       name="rincian[${kelompok}][${pesertaId}][${index}][total]" 
-                       class="form-control form-control-sm total" 
-                       readonly
-                       placeholder="0">
-            </td>
-            <td class="text-center">
-                <button type="button" 
-                        class="btn btn-sm btn-outline-danger" 
-                        onclick="this.closest('tr').remove()">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </td>
-        </tr>
-    `);
-}
-
-function removePeserta(btn, kelompok, id, tipe) {
-    if (confirm('Apakah Anda yakin ingin menghapus peserta ini?')) {
-        if (id) {
-            // Mark for deletion by adding hidden input
-            const container = btn.closest('.peserta-card');
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = `deleted_${tipe}[${kelompok}][]`;
-            input.value = id;
-            container.appendChild(input);
+    
+    // Reset counter
+    if (typeof subKelompokCounter !== 'undefined') {
+        subKelompokCounter = 1;
+    }
+    
+    // Hitung berapa banyak kelompok yang akan di-load
+    let totalKelompokToLoad = 0;
+    let loadedKelompok = 0;
+    
+    if (initialData.panitia && initialData.panitia.length > 0) totalKelompokToLoad++;
+    if (initialData.peserta && initialData.peserta.length > 0) totalKelompokToLoad++;
+    if (initialData.narasumber && initialData.narasumber.length > 0) totalKelompokToLoad++;
+    
+    // Fungsi untuk cek apakah semua data sudah load
+    function checkAllDataLoaded() {
+        loadedKelompok++;
+        console.log(`Data loaded: ${loadedKelompok}/${totalKelompokToLoad}`);
+        if (loadedKelompok >= totalKelompokToLoad) {
+            // Semua data sudah load, simpan ke storage dan update review jika perlu
+            setTimeout(() => {
+                saveToStorage();
+                // Jika sedang di step 5, update review
+                // if (currentStep === 5 && typeof updateReview === 'function') {
+                //     setTimeout(() => {
+                //         updateReview();
+                //     }, 500);
+                // }
+            }, 500);
         }
-        btn.closest('.peserta-card').remove();
-        toggleCopyToAllButton(kelompok);
+    }
+    
+    // Load kelompok data dengan callback
+    if (initialData.panitia && initialData.panitia.length > 0) {
+        console.log('Loading panitia data...');
+        if (typeof window.loadEditData === 'function') {
+            // Modifikasi loadEditData untuk menerima callback
+            window.loadEditDataWithCallback('panitia', initialData.panitia, checkAllDataLoaded);
+        } else {
+            checkAllDataLoaded();
+        }
+    } else {
+        checkAllDataLoaded();
+    }
+    
+    if (initialData.peserta && initialData.peserta.length > 0) {
+        setTimeout(() => {
+            console.log('Loading peserta data...');
+            if (typeof window.loadEditDataWithCallback === 'function') {
+                window.loadEditDataWithCallback('peserta', initialData.peserta, checkAllDataLoaded);
+            } else {
+                checkAllDataLoaded();
+            }
+        }, 300);
+    } else {
+        setTimeout(checkAllDataLoaded, 300);
+    }
+    
+    if (initialData.narasumber && initialData.narasumber.length > 0) {
+        setTimeout(() => {
+            console.log('Loading narasumber data...');
+            if (typeof window.loadEditDataWithCallback === 'function') {
+                window.loadEditDataWithCallback('narasumber', initialData.narasumber, checkAllDataLoaded);
+            } else {
+                checkAllDataLoaded();
+            }
+        }, 600);
+    } else {
+        setTimeout(checkAllDataLoaded, 600);
     }
 }
 
-document.addEventListener('input', function(e){
+// Collect data dari step 1
+function collectStep1() {
+    return {
+        tingkat_perjalanan: document.querySelector('[name="tingkat_perjalanan"]')?.value,
+        alat_angkutan: document.querySelector('[name="alat_angkutan"]')?.value,
+        dari_kota: document.querySelector('[name="dari_kota"]')?.value,
+        tujuan_kota: document.querySelector('[name="tujuan_kota"]')?.value,
+        tanggal_mulai: document.getElementById('tanggal_mulai')?.value,
+        tanggal_akhir: document.getElementById('tanggal_akhir')?.value,
+        tanggal_terima: document.getElementById('tanggal_terima')?.value,
+        kode_mak: document.querySelector('[name="kode_mak"]')?.value,
+        akun_biaya: document.querySelector('[name="akun_biaya"]')?.value,
+        nama_kegiatan: document.querySelector('[name="nama_kegiatan"]')?.value,
+    };
+}
+
+// Collect data dari kelompok
+function collectKelompokData(tipe) {
+    const container = document.getElementById(`container-${tipe}`);
+    if (!container) return [];
+    
+    const result = [];
+    const stCards = container.querySelectorAll('.st-card');
+    
+    stCards.forEach(stCard => {
+        const nomor = stCard.querySelector('[name*="[nomor_st]"]')?.value;
+        const tanggal = stCard.querySelector('[name*="[tanggal_st]"]')?.value;
+        const items = [];
+        
+        const pesertaCards = stCard.querySelectorAll('.peserta-card');
+        pesertaCards.forEach(p => {
+            let data = {
+                type: p.dataset.type, 
+                rincian: []
+            };
+            
+            if (data.type === 'pegawai') {
+                const select = p.querySelector('select');
+                data.pegawai_id = select?.value || '';
+                if (select?.selectedOptions[0]) {
+                    data.nama = select.selectedOptions[0].getAttribute('data-nama');
+                    data.nip = select.selectedOptions[0].getAttribute('data-nip');
+                }
+            } else {
+                data.nama = p.querySelector('[name*="[nama]"]')?.value || '';
+                data.nik = p.querySelector('[name*="[nik]"]')?.value || '';
+                data.instansi = p.querySelector('[name*="[instansi]"]')?.value || '';
+            }
+            
+            // Kumpulkan rincian
+            const tbody = p.querySelector('tbody');
+            if (tbody) {
+                tbody.querySelectorAll('tr').forEach(row => {
+                    data.rincian.push({
+                        jenis_biaya_id: row.querySelector('select')?.value || '',
+                        uraian: row.querySelector('[name*="[uraian]"]')?.value || '',
+                        volume: row.querySelector('.vol')?.value || 0,
+                        satuan: row.querySelector('[name*="[satuan]"]')?.value || '',
+                        tarif: row.querySelector('.tarif')?.value || 0,
+                        total: row.querySelector('.total')?.value || 0
+                    });
+                });
+            }
+            
+            items.push(data);
+        });
+        
+        result.push({
+            nomor_st: nomor,
+            tanggal_st: tanggal,
+            items: items
+        });
+    });
+    
+    return result;
+}
+
+// Render step 1
+function renderStep1(data) {
+    if (!data) return;
+    
+    const fields = ['tingkat_perjalanan', 'alat_angkutan', 'dari_kota', 'tujuan_kota', 'kode_mak', 'akun_biaya', 'nama_kegiatan'];
+    fields.forEach(field => {
+        const el = document.querySelector(`[name="${field}"]`);
+        if (el && data[field]) el.value = data[field];
+    });
+    
+    const dates = ['tanggal_mulai', 'tanggal_akhir', 'tanggal_terima'];
+    dates.forEach(date => {
+        const el = document.getElementById(date);
+        if (el && data[date]) el.value = data[date];
+    });
+}
+
+// Save ke localStorage
+function saveToStorage() {
+    formState.step1 = collectStep1();
+    formState.panitia = collectKelompokData('panitia');
+    formState.peserta = collectKelompokData('peserta');
+    formState.narasumber = collectKelompokData('narasumber');
+    
+    localStorage.setItem('perjadin_form', JSON.stringify(formState));
+}
+
+// Auto-save dengan debounce
+function debounce(func, delay) {
+    let timeout;
+    return function() {
+        clearTimeout(timeout);
+        timeout = setTimeout(func, delay);
+    };
+}
+
+const autoSave = debounce(saveToStorage, 500);
+document.addEventListener('input', autoSave);
+
+// Auto-calculate total
+document.addEventListener('input', function(e) {
     if (e.target.classList.contains('vol') || e.target.classList.contains('tarif')) {
         const row = e.target.closest('tr');
-        const v = parseFloat(row.querySelector('.vol').value) || 0;
-        const t = parseFloat(row.querySelector('.tarif').value) || 0;
-        row.querySelector('.total').value = v * t;
+        if (row) {
+            const vol = parseFloat(row.querySelector('.vol')?.value) || 0;
+            const tarif = parseFloat(row.querySelector('.tarif')?.value) || 0;
+            const total = vol * tarif;
+            const totalInput = row.querySelector('.total');
+            if (totalInput) totalInput.value = total;
+        }
     }
 });
 
-function toggleCopyToAllButton(kelompok) {
-    const container = document.getElementById(`container-${kelompok}`);
-    const pesertaCards = container.querySelectorAll('.peserta-card');
-    const btn = document.getElementById(`btnCopy-${kelompok}`);
+// Navigasi steps
+document.getElementById('nextBtn').addEventListener('click', nextStep);
+document.getElementById('prevBtn').addEventListener('click', prevStep);
 
-    if (btn) {
-        btn.style.display = pesertaCards.length >= 2 ? 'inline-flex' : 'none';
+function nextStep() {
+    if (!validateStep(currentStep)) return;
+    
+    saveToStorage();
+    
+    document.getElementById(`step${currentStep}`).classList.remove('active');
+    currentStep++;
+    document.getElementById(`step${currentStep}`).classList.add('active');
+    
+    // // Update review saat masuk ke step 5
+    // if (currentStep === 5) {
+    //     // Coba panggil berulang kali dengan interval
+    //     let attempts = 0;
+    //     const interval = setInterval(() => {
+    //         attempts++;
+    //         console.log(`Update review attempt ${attempts}`);
+            
+    //         if (typeof updateReview === 'function') {
+    //             updateReview();
+                
+    //             // Cek apakah data sudah muncul
+    //             const reviewPanitia = document.getElementById('review-panitia');
+    //             if (reviewPanitia && reviewPanitia.innerHTML !== '<p class="text-muted">Belum ada data</p>') {
+    //                 console.log('Review data appears!');
+    //                 clearInterval(interval);
+    //             }
+    //         }
+            
+    //         if (attempts >= 10) {
+    //             console.log('Max attempts reached');
+    //             clearInterval(interval);
+    //         }
+    //     }, 500);
+    // }
+    
+    updateStepIndicator();
+}
+
+function prevStep() {
+    if (currentStep > 1) {
+        document.getElementById(`step${currentStep}`).classList.remove('active');
+        currentStep--;
+        document.getElementById(`step${currentStep}`).classList.add('active');
+        updateStepIndicator();
     }
 }
 
-function copyToAllPeserta(kelompok) {
-    const container = document.getElementById(`container-${kelompok}`);
-    const pesertaCards = container.querySelectorAll('.peserta-card');
-
-    if (pesertaCards.length < 2) {
-        alert('Minimal ada 2 peserta');
-        return;
-    }
-
-    const firstPeserta = pesertaCards[0];
-    const firstTbody = firstPeserta.querySelector('tbody');
-
-    if (!firstTbody || firstTbody.querySelectorAll('tr').length === 0) {
-        alert('Peserta pertama belum ada rincian');
-        return;
-    }
-
-    const firstRows = firstTbody.querySelectorAll('tr');
-    let copied = 0;
-
-    for (let i = 1; i < pesertaCards.length; i++) {
-        const target = pesertaCards[i];
-        const targetTbody = target.querySelector('tbody');
-
-        if (!targetTbody) continue;
-
-        targetTbody.innerHTML = '';
-
-        firstRows.forEach(row => {
-            const clone = row.cloneNode(true);
-
-            const originalFields = row.querySelectorAll('input, select');
-            const cloneFields = clone.querySelectorAll('input, select');
-
-            cloneFields.forEach((field, index) => {
-                const name = field.getAttribute('name');
-
-                if (name) {
-                    const newName = name.replace(
-                        /rincian\[[^\]]+\]\[[^\]]+\]/,
-                        `rincian[${kelompok}][${target.dataset.pesertaId}]`
-                    );
-                    field.setAttribute('name', newName);
-                }
-
-                if (field.tagName === 'SELECT') {
-                    field.value = originalFields[index].value;
-                } else {
-                    field.value = originalFields[index].value;
-                }
-            });
-
-            targetTbody.appendChild(clone);
-        });
-
-        copied++;
-    }
-
-    alert(`Berhasil copy ke ${copied} peserta`);
+function updateStepIndicator() {
+    document.querySelectorAll('.step-item').forEach((item, index) => {
+        const stepNum = index + 1;
+        if (stepNum < currentStep) {
+            item.classList.add('completed');
+            item.classList.remove('active');
+        } else if (stepNum === currentStep) {
+            item.classList.add('active');
+            item.classList.remove('completed');
+        } else {
+            item.classList.remove('active', 'completed');
+        }
+    });
+    
+    document.getElementById('prevBtn').style.display = currentStep === 1 ? 'none' : 'inline-block';
+    document.getElementById('nextBtn').style.display = currentStep === totalSteps ? 'none' : 'inline-block';
+    document.getElementById('submitBtn').style.display = currentStep === totalSteps ? 'inline-block' : 'none';
 }
+
+function validateStep(step) {
+    if (step === 1) {
+        const mulai = document.getElementById('tanggal_mulai')?.value;
+        const akhir = document.getElementById('tanggal_akhir')?.value;
+        if (!mulai || !akhir) {
+            alert('Lengkapi tanggal mulai dan akhir');
+            return false;
+        }
+        if (new Date(mulai) > new Date(akhir)) {
+            alert('Tanggal mulai tidak boleh lebih besar dari tanggal akhir');
+            return false;
+        }
+        return true;
+    }
+    return true;
+}
+
+function updateReview() {
+    const reviewContainer = document.getElementById('review-content');
+    if (!reviewContainer) return;
+    
+    const data = {
+        step1: collectStep1(),
+        panitia: collectKelompokData('panitia'),
+        peserta: collectKelompokData('peserta'),
+        narasumber: collectKelompokData('narasumber')
+    };
+    
+    const totalPanitia = data.panitia.reduce((sum, k) => sum + k.items.length, 0);
+    const totalPeserta = data.peserta.reduce((sum, k) => sum + k.items.length, 0);
+    const totalNarasumber = data.narasumber.reduce((sum, k) => sum + k.items.length, 0);
+    
+    reviewContainer.innerHTML = `
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Review Data Perjalanan Dinas</h5>
+            </div>
+            <div class="card-body">
+                <h6>Informasi Perjalanan:</h6>
+                <table class="table table-sm table-bordered">
+                    <tr><th style="width:30%">Nama Kegiatan</th><td>${data.step1.nama_kegiatan || '-'}</td></tr>
+                    <tr><th>Tingkat Perjalanan</th><td>${data.step1.tingkat_perjalanan || '-'}</td></tr>
+                    <tr><th>Alat Angkutan</th><td>${data.step1.alat_angkutan || '-'}</td></tr>
+                    <tr><th>Dari Kota</th><td>${data.step1.dari_kota || '-'}</td></tr>
+                    <tr><th>Tujuan Kota</th><td>${data.step1.tujuan_kota || '-'}</td></tr>
+                    <tr><th>Periode</th><td>${data.step1.tanggal_mulai || '-'} s/d ${data.step1.tanggal_akhir || '-'}</td></tr>
+                </table>
+                
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3>${data.panitia.length}</h3>
+                                <p class="mb-0">Kelompok Panitia</p>
+                                <small>${totalPanitia} anggota</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3>${data.peserta.length}</h3>
+                                <p class="mb-0">Kelompok Peserta</p>
+                                <small>${totalPeserta} anggota</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3>${data.narasumber.length}</h3>
+                                <p class="mb-0">Kelompok Narasumber</p>
+                                <small>${totalNarasumber} anggota</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Clear storage saat submit
+document.getElementById('multiStepForm').addEventListener('submit', function() {
+    localStorage.removeItem('perjadin_form');
+});
 </script>
-
-<style>
-.table-responsive { overflow-x: auto; }
-.table-responsive table { min-width: 950px; width: max-content; }
-.table th, .table td { white-space: nowrap; }
-.table th:nth-child(2), .table td:nth-child(2) { min-width: 280px; }
-</style>
-
 @endsection

@@ -392,5 +392,9 @@ function getCurrentTipe() {
     if (currentStep === 3) return 'peserta';
     return 'narasumber';
 }
+
+document.getElementById('multiStepForm').addEventListener('submit', function () {
+    localStorage.removeItem('perjadin_form');
+});
 </script>
 @endsection
