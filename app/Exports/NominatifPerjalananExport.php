@@ -35,11 +35,20 @@ public function __construct($perjalanan)
             ->firstWhere('jenis_biaya_id', $j->id);
 
         $uraian = $sample->uraian ?? null;
+        $isTransport = str_contains(
+            strtolower($j->nama_biaya),
+            'transport'
+        );
 
         return [
             'jenis_id' => $j->id,
             'label' => strtoupper(
-                $j->nama_biaya . ($uraian ? " ($uraian)" : "")
+                $j->nama_biaya .
+                (
+                    !$isTransport && $uraian
+                        ? " ($uraian)"
+                        : ""
+                )
             ),
             'is_transport' => str_contains(strtolower($j->nama_biaya), 'transport'),
             'satuan' => $sample->satuan ?? 'VOL'

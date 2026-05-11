@@ -4,7 +4,7 @@
         <h5 class="mb-0">👥 {{ $title }}</h5>
 
         <button type="button"
-            class="btn btn-light btn-sm"
+            class="btn btn-success btn-sm"
             onclick="addSubKelompok('{{ $tipe }}')">
             + Tambah ST
         </button>
@@ -45,7 +45,7 @@ function addSubKelompok(kelompok, existingData = null) {
 
                 <div class="d-flex gap-2">
                     <button type="button"
-                        class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1 toggle-btn"
+                        class="btn btn-sm btn-outline-success d-flex align-items-center gap-1 toggle-btn"
                         data-bs-toggle="collapse"
                         data-bs-target="#collapse-${kelompok}-${index}">
                         Detail 
@@ -85,21 +85,21 @@ function addSubKelompok(kelompok, existingData = null) {
 
                     <div class="d-flex gap-2">
                         <button type="button"
-                            class="btn btn-sm btn-outline-success"
+                            class="btn btn-sm btn-success"
                             onclick="addPegawaiRow('${kelompok}', ${index})">
                             + Pegawai
                         </button>
 
                         <button type="button"
-                            class="btn btn-sm btn-outline-success"
+                            class="btn btn-sm btn-primary"
                             onclick="addNonPegawaiRow('${kelompok}', ${index})">
                             + Non Pegawai
                         </button>
 
                         <button type="button"
-                            class="btn btn-sm btn-outline-info"
+                            class="btn btn-sm btn-warning"
                             onclick="copyToAllPeserta('${kelompok}', ${index})">
-                            <i class="bi bi-files"></i> Copy ke Semua
+                            Salin Rincian (Pertama → Semua)
                         </button>
                     </div>
 
@@ -227,7 +227,7 @@ function addNonPegawaiRow(kelompok, subIndex) {
     container.insertAdjacentHTML('beforeend', `
         <div class="peserta-card border rounded p-3 mb-3" data-peserta-id="${pesertaId}" data-type="nonpegawai">
             <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                <strong class="text-success">
+                <strong class="text-primary">
                     <i class="bi bi-person me-1"></i> ${kelompok.toUpperCase()} - Non Pegawai
                 </strong>
                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.peserta-card').remove()">
@@ -462,7 +462,7 @@ function toggleCopyToAllButton(kelompok) {
     
     stCards.forEach(stCard => {
         const pesertaCards = stCard.querySelectorAll('.peserta-card');
-        const copyBtn = stCard.querySelector('.btn-outline-info');
+        const copyBtn = stCard.querySelector('.btn-warning');
         if (copyBtn) {
             copyBtn.style.display = pesertaCards.length >= 2 ? 'inline-flex' : 'none';
         }

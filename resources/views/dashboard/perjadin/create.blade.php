@@ -125,7 +125,7 @@
 <div class="d-flex justify-content-between mt-4">
     <button type="button" class="btn btn-secondary" id="prevBtn" style="display:none;">← Sebelumnya</button>
     <button type="button" class="btn btn-success" id="nextBtn">Selanjutnya →</button>
-    <button type="submit" class="btn btn-success" id="submitBtn" style="display:none;">💾 Simpan Semua</button>
+    <button type="submit" class="btn btn-success" id="submitBtn" style="display:none;">Simpan Semua</button>
 </div>
 
 </form>
@@ -374,16 +374,45 @@ function updateStepIndicator() {
 }
 
 function validateStep(step) {
+
     if (step === 1) {
-        // Validasi step 1
-        const mulai = document.getElementById('tanggal_mulai').value;
-        const akhir = document.getElementById('tanggal_akhir').value;
-        if (!mulai || !akhir) {
-            alert('Lengkapi tanggal mulai dan akhir');
+
+        const requiredFields = document.querySelectorAll(
+            '#step1 [required]'
+        );
+
+        for (const field of requiredFields) {
+
+            if (!field.value.trim()) {
+
+                const label = field
+                    .closest('.mb-3, .col-md-6, .col-md-4')
+                    ?.querySelector('label')
+                    ?.innerText
+                    ?.replace('*', '')
+                    ?.trim();
+
+                alert(`${label || 'Field'} wajib diisi`);
+
+                field.focus();
+
+                return false;
+            }
+        }
+
+        const mulai = document.getElementById('tanggal_mulai')?.value;
+        const akhir = document.getElementById('tanggal_akhir')?.value;
+
+        if (new Date(mulai) > new Date(akhir)) {
+
+            alert('Tanggal mulai tidak boleh lebih besar dari tanggal akhir');
+
             return false;
         }
+
         return true;
     }
+
     return true;
 }
 
@@ -394,7 +423,10 @@ function getCurrentTipe() {
 }
 
 document.getElementById('multiStepForm').addEventListener('submit', function () {
+
     localStorage.removeItem('perjadin_form');
+
+    sessionStorage.removeItem('perjadin_form');
 });
 </script>
 @endsection

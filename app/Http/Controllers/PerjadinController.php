@@ -674,6 +674,11 @@ foreach ($allTipe as $tipe) {
         );
     }
 
+    private function safeValue($text)
+    {
+        return htmlspecialchars($text ?? '-', ENT_QUOTES | ENT_XML1, 'UTF-8');
+    }
+
     public function exportKuitansi($id)
     {
         $pp = PerjalananDinasPegawai::with([
@@ -714,24 +719,24 @@ foreach ($allTipe as $tipe) {
         // SET DATA UMUM
         // ===============================
         $data = [
-            'tahun_anggaran'   => $perjalanan->tahun_anggaran ?? date('Y'),
-            'beban_mak'        => $perjalanan->kode_mak ?? '-',
+            'tahun_anggaran'   => $this->safeValue($perjalanan->tahun_anggaran ?? date('Y')),
+            'beban_mak'        => $this->safeValue($perjalanan->kode_mak ?? '-'),
 
             'jumlah_rupiah' => 'Rp' . number_format($sumTotal, 0, ',', '.'),
-            'terbilang'     => $this->terbilang($sumTotal),
-            'keperluan'     => $perjalanan->nama_kegiatan ?? '-',
-            'nomor_spd'     => $pp->subKelompok->nomor_st ?? '-',
+            'terbilang'     => $this->safeValue($this->terbilang($sumTotal)),
+            'keperluan'     => $this->safeValue($perjalanan->nama_kegiatan ?? '-'),
+            'nomor_spd'     => $this->safeValue($pp->subKelompok->nomor_st ?? '-'),
             'tanggal_spd'   => $pp->subKelompok->tanggal_st
                 ? Carbon::parse($pp->tanggal_st)->translatedFormat('d F Y')
-                : '-',
-            'tujuan'        => $perjalanan->tujuan_kota ?? '-',
+                : $this->safeValue('-'),
+            'tujuan'        => $this->safeValue($perjalanan->tujuan_kota ?? '-'),
 
             // PERJALANAN
-            'nama_kegiatan'   => $perjalanan->nama_kegiatan ?? '-',
-            'alat_angkutan'   => $perjalanan->alat_angkutan ?? '-',
-            'dari_kota'       => $perjalanan->dari_kota ?? '-',
-            'tujuan_kota'     => $perjalanan->tujuan_kota ?? '-',
-            'tingkat_perjalanan' => $perjalanan->tingkat_perjalanan ?? '-',
+            'nama_kegiatan'   => $this->safeValue($perjalanan->nama_kegiatan ?? '-'),
+            'alat_angkutan'   => $this->safeValue($perjalanan->alat_angkutan ?? '-'),
+            'dari_kota'       => $this->safeValue($perjalanan->dari_kota ?? '-'),
+            'tujuan_kota'     => $this->safeValue($perjalanan->tujuan_kota ?? '-'),
+            'tingkat_perjalanan' => $this->safeValue($perjalanan->tingkat_perjalanan ?? '-'),
 
             // TANGGAL
             'tanggal_mulai' => $tanggalMulai->translatedFormat('d F Y'),
@@ -741,21 +746,21 @@ foreach ($allTipe as $tipe) {
             // TANGGAL TERIMA 
             'tanggal_terima' => $perjalanan->tanggal_terima
                             ? Carbon::parse($perjalanan->tanggal_terima)->translatedFormat('d F Y')
-                            : '-',
+                            : $this->safeValue('-'),
 
             // Penerima
-            'nama_penerima' => $pegawai->nama,
-            'nip_penerima'  => $pegawai->nip,
-            'pangkat_golongan_penerima' => $pegawai->pangkat_golongan ?? '-',
-            'jabatan_penerima' => $pegawai->jabatan ?? '-',
+            'nama_penerima' => $this->safeValue($pegawai->nama),
+            'nip_penerima'  => $this->safeValue($pegawai->nip),
+            'pangkat_golongan_penerima' => $this->safeValue($pegawai->pangkat_golongan ?? '-'),
+            'jabatan_penerima' => $this->safeValue($pegawai->jabatan ?? '-'),
 
             // Bendahara
-            'nama_bendahara' => $bendahara?->pegawai?->nama ?? '-',
-            'nip_bendahara'  => $bendahara?->pegawai?->nip ?? '-',
+            'nama_bendahara' => $this->safeValue($bendahara?->pegawai?->nama ?? '-'),
+            'nip_bendahara'  => $this->safeValue($bendahara?->pegawai?->nip ?? '-'),
 
             // PPK
-            'nama_ppk'       => $ppk?->pegawai?->nama ?? '-',
-            'nip_ppk'        => $ppk?->pegawai?->nip ?? '-',
+            'nama_ppk'       => $this->safeValue($ppk?->pegawai?->nama ?? '-'),
+            'nip_ppk'        => $this->safeValue($ppk?->pegawai?->nip ?? '-'),
 
             'sum_total'     => number_format($sumTotal, 0, ',', '.'),
         ];
@@ -773,41 +778,41 @@ foreach ($allTipe as $tipe) {
 
             $index = $i + 1;
 
-            $jenis = $r->jenisBiaya->nama_biaya;
-            $detail = $r->uraian;
+            $jenis = $this->safeValue($r->jenisBiaya->nama_biaya);
+            $detail = $this->safeValue($r->uraian);
 
             $uraian = $jenis;
 
-            if (!empty($detail)) {
+            if (!empty($r->uraian)) {
                 $uraian .= " ({$detail})";
             }
 
             $volume = (int) $r->volume;
 
             if ($r->volume && $r->tarif) {
-                $uraian .= " : {$volume} {$r->satuan} x Rp"
+                $uraian .= " : {$volume} {$this->safeValue($r->satuan)} x Rp"
             . number_format($r->tarif, 0, ',', '.');
             }
 
             $template->setValue("no#{$index}", $index);
             $template->setValue("uraian#{$index}", $uraian);
             $template->setValue("jumlah#{$index}", 'Rp' . number_format($r->total, 0, ',', '.'));
-            $template->setValue("keterangan#{$index}", '-');
+            $template->setValue("keterangan#{$index}", $this->safeValue('-'));
         }
 
         $rincianRiil = $rincian->filter(function ($r) {
             $nama = strtolower($r->jenisBiaya->nama_biaya);
 
             return str_contains($nama, 'taksi');
-        });
+        })->values();
 
         if ($rincianRiil->count() == 1) {
 
             $r = $rincianRiil->first();
 
             $uraian = $r->uraian
-                ? $r->jenisBiaya->nama_biaya . ' (' . $r->uraian . ')'
-                : $r->jenisBiaya->nama_biaya;
+                ? $this->safeValue($r->jenisBiaya->nama_biaya) . ' (' . $this->safeValue($r->uraian) . ')'
+                : $this->safeValue($r->jenisBiaya->nama_biaya);
 
             // TANPA #1
             $template->setValue('no_riil', 1);
@@ -820,9 +825,9 @@ foreach ($allTipe as $tipe) {
         } elseif ($rincianRiil->isEmpty()) {
 
             // optional: tetap 1 baris kosong
-            $template->setValue('no_riil', '-');
-            $template->setValue('uraian_riil', '-');
-            $template->setValue('jumlah_riil', '-');
+            $template->setValue('no_riil', $this->safeValue('-'));
+            $template->setValue('uraian_riil', $this->safeValue('-'));
+            $template->setValue('jumlah_riil', $this->safeValue('-'));
 
         } else {
 
@@ -833,8 +838,8 @@ foreach ($allTipe as $tipe) {
                 $index = $i + 1;
 
                 $uraian = $r->uraian
-                    ? $r->jenisBiaya->nama_biaya . ' (' . $r->uraian . ')'
-                    : $r->jenisBiaya->nama_biaya;
+                    ? $this->safeValue($r->jenisBiaya->nama_biaya) . ' (' . $this->safeValue($r->uraian) . ')'
+                    : $this->safeValue($r->jenisBiaya->nama_biaya);
 
                 $template->setValue("no_riil#{$index}", $index);
                 $template->setValue("uraian_riil#{$index}", $uraian);
@@ -865,7 +870,7 @@ foreach ($allTipe as $tipe) {
         return response()->download($savePath)->deleteFileAfterSend(true);
     }
 
-    public function exportKuitansiNonPegawai($npId)
+   public function exportKuitansiNonPegawai($npId)
     {
         $np = NonPegawai::with([
             'perjalananDinas.surat',
@@ -903,24 +908,24 @@ foreach ($allTipe as $tipe) {
         // SET DATA UMUM
         // ===============================
         $data = [
-            'tahun_anggaran'   => $perjalanan->tahun_anggaran ?? date('Y'),
-            'beban_mak'        => $perjalanan->kode_mak ?? '-',
+            'tahun_anggaran'   => $this->safeValue($perjalanan->tahun_anggaran ?? date('Y')),
+            'beban_mak'        => $this->safeValue($perjalanan->kode_mak ?? '-'),
 
             'jumlah_rupiah' => 'Rp' . number_format($sumTotal, 0, ',', '.'),
-            'terbilang'     => $this->terbilang($sumTotal),
-            'keperluan'     => $perjalanan->nama_kegiatan ?? '-',
-            'nomor_spd'     => $np->subKelompok->nomor_st ?? '-',
+            'terbilang'     => $this->safeValue($this->terbilang($sumTotal)),
+            'keperluan'     => $this->safeValue($perjalanan->nama_kegiatan ?? '-'),
+            'nomor_spd'     => $this->safeValue($np->subKelompok->nomor_st ?? '-'),
             'tanggal_spd'   => $np->subKelompok->tanggal_st
                 ? Carbon::parse($np->tanggal_st)->translatedFormat('d F Y')
-                : '-',
-            'tujuan'        => $perjalanan->tujuan_kota ?? '-',
+                : $this->safeValue('-'),
+            'tujuan'        => $this->safeValue($perjalanan->tujuan_kota ?? '-'),
 
             // PERJALANAN
-            'nama_kegiatan'   => $perjalanan->nama_kegiatan ?? '-',
-            'alat_angkutan'   => $perjalanan->alat_angkutan ?? '-',
-            'dari_kota'       => $perjalanan->dari_kota ?? '-',
-            'tujuan_kota'     => $perjalanan->tujuan_kota ?? '-',
-            'tingkat_perjalanan' => $perjalanan->tingkat_perjalanan ?? '-',
+            'nama_kegiatan'   => $this->safeValue($perjalanan->nama_kegiatan ?? '-'),
+            'alat_angkutan'   => $this->safeValue($perjalanan->alat_angkutan ?? '-'),
+            'dari_kota'       => $this->safeValue($perjalanan->dari_kota ?? '-'),
+            'tujuan_kota'     => $this->safeValue($perjalanan->tujuan_kota ?? '-'),
+            'tingkat_perjalanan' => $this->safeValue($perjalanan->tingkat_perjalanan ?? '-'),
 
             // TANGGAL
             'tanggal_mulai' => $tanggalMulai->translatedFormat('d F Y'),
@@ -930,21 +935,21 @@ foreach ($allTipe as $tipe) {
             // TANGGAL TERIMA 
             'tanggal_terima' => $perjalanan->tanggal_terima
                             ? Carbon::parse($perjalanan->tanggal_terima)->translatedFormat('d F Y')
-                            : '-',
+                            : $this->safeValue('-'),
 
-            // Penerima
-            'nama_penerima' => $np->nama,
-            'nip_penerima'  => $np->nik,
-            'pangkat_golongan_penerima' => $np->instansi ?? '-',
-            'jabatan_penerima' => $np->instansi ?? '-',
+            // Penerima (Non Pegawai)
+            'nama_penerima' => $this->safeValue($np->nama),
+            'nip_penerima'  => $this->safeValue($np->nik),
+            'pangkat_golongan_penerima' => $this->safeValue($np->instansi ?? '-'),
+            'jabatan_penerima' => $this->safeValue($np->instansi ?? '-'),
 
             // Bendahara
-            'nama_bendahara' => $bendahara?->pegawai?->nama ?? '-',
-            'nip_bendahara'  => $bendahara?->pegawai?->nip ?? '-',
+            'nama_bendahara' => $this->safeValue($bendahara?->pegawai?->nama ?? '-'),
+            'nip_bendahara'  => $this->safeValue($bendahara?->pegawai?->nip ?? '-'),
 
             // PPK
-            'nama_ppk'       => $ppk?->pegawai?->nama ?? '-',
-            'nip_ppk'        => $ppk?->pegawai?->nip ?? '-',
+            'nama_ppk'       => $this->safeValue($ppk?->pegawai?->nama ?? '-'),
+            'nip_ppk'        => $this->safeValue($ppk?->pegawai?->nip ?? '-'),
 
             'sum_total'     => number_format($sumTotal, 0, ',', '.'),
         ];
@@ -962,41 +967,44 @@ foreach ($allTipe as $tipe) {
 
             $index = $i + 1;
 
-            $jenis = $r->jenisBiaya->nama_biaya;
-            $detail = $r->uraian;
+            $jenis = $this->safeValue($r->jenisBiaya->nama_biaya);
+            $detail = $this->safeValue($r->uraian);
 
             $uraian = $jenis;
 
-            if (!empty($detail)) {
+            if (!empty($r->uraian)) {
                 $uraian .= " ({$detail})";
             }
 
             $volume = (int) $r->volume;
 
             if ($r->volume && $r->tarif) {
-                $uraian .= " : {$volume} {$r->satuan} x Rp"
+                $uraian .= " : {$volume} {$this->safeValue($r->satuan)} x Rp"
             . number_format($r->tarif, 0, ',', '.');
             }
 
             $template->setValue("no#{$index}", $index);
             $template->setValue("uraian#{$index}", $uraian);
             $template->setValue("jumlah#{$index}", 'Rp' . number_format($r->total, 0, ',', '.'));
-            $template->setValue("keterangan#{$index}", '-');
+            $template->setValue("keterangan#{$index}", $this->safeValue('-'));
         }
 
+        // ===============================
+        // RINCIAN RIIL (TAKSI/DLL)
+        // ===============================
         $rincianRiil = $rincian->filter(function ($r) {
             $nama = strtolower($r->jenisBiaya->nama_biaya);
 
             return str_contains($nama, 'taksi');
-        });
+        })->values();
 
         if ($rincianRiil->count() == 1) {
 
             $r = $rincianRiil->first();
 
-            $uraian = $r->uraian
-                ? $r->jenisBiaya->nama_biaya . ' (' . $r->uraian . ')'
-                : $r->jenisBiaya->nama_biaya;
+            $uraian = !empty($r->uraian)
+                ? $this->safeValue($r->jenisBiaya->nama_biaya) . ' (' . $this->safeValue($r->uraian) . ')'
+                : $this->safeValue($r->jenisBiaya->nama_biaya);
 
             // TANPA #1
             $template->setValue('no_riil', 1);
@@ -1009,9 +1017,9 @@ foreach ($allTipe as $tipe) {
         } elseif ($rincianRiil->isEmpty()) {
 
             // optional: tetap 1 baris kosong
-            $template->setValue('no_riil', '-');
-            $template->setValue('uraian_riil', '-');
-            $template->setValue('jumlah_riil', '-');
+            $template->setValue('no_riil', $this->safeValue('-'));
+            $template->setValue('uraian_riil', $this->safeValue('-'));
+            $template->setValue('jumlah_riil', $this->safeValue('-'));
 
         } else {
 
@@ -1021,9 +1029,9 @@ foreach ($allTipe as $tipe) {
 
                 $index = $i + 1;
 
-                $uraian = $r->uraian
-                    ? $r->jenisBiaya->nama_biaya . ' (' . $r->uraian . ')'
-                    : $r->jenisBiaya->nama_biaya;
+                $uraian = !empty($r->uraian)
+                    ? $this->safeValue($r->jenisBiaya->nama_biaya) . ' (' . $this->safeValue($r->uraian) . ')'
+                    : $this->safeValue($r->jenisBiaya->nama_biaya);
 
                 $template->setValue("no_riil#{$index}", $index);
                 $template->setValue("uraian_riil#{$index}", $uraian);
