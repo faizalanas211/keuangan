@@ -291,7 +291,7 @@
                                 )"
                                 class="action-icon edit"
                                 title="Edit Pejabat">
-                                <i class="bi bi-pencil-square"></i> Edit
+                                <i class="bi bi-pencil-square"></i>
                             </button>
 
                             <form action="{{ route('pejabat.destroy', $item->id) }}"
@@ -301,7 +301,7 @@
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="action-icon delete" title="Hapus Pejabat">
-                                    <i class="bi bi-trash3"></i> Hapus
+                                    <i class="bi bi-trash3"></i>
                                 </button>
                             </form>
                         </div>
