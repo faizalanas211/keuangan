@@ -131,6 +131,10 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
         ->name('perjadin.export.amplop');
     Route::get('perjadin/export/amplop-non-pegawai/{np}', [PerjadinController::class, 'exportAmplopNonPegawai'])
         ->name('perjadin.export.amplopNonPegawai');
+    Route::get('/perjadin/export-amplop-st/{subKelompokId}', [PerjadinController::class, 'exportAmplopST'])
+        ->name('perjadin.export.amplop.st');
+    Route::get('/perjadin/export-kuitansi-st/{subKelompokId}', [PerjadinController::class, 'exportKuitansiST'])
+        ->name('perjadin.export.kuitansi.st');
 
     // Pengaturan Template
     Route::resource('template', TemplateController::class);

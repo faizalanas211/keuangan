@@ -420,14 +420,14 @@ function loadRincianToPeserta(kelompok, pesertaId, subIndex, rincianList) {
                         name="rincian[${kelompok}][${subIndex}][${pesertaId}][${index}][volume]" 
                         class="form-control form-control-sm vol" 
                         value="${volume}">
-                </td>
-                <td>
+                </table>
+                <tr>
                     <input type="text" 
                         name="rincian[${kelompok}][${subIndex}][${pesertaId}][${index}][satuan]" 
                         class="form-control form-control-sm" 
                         value="${escapeHtml(rincian.satuan || 'hari')}">
                 </td>
-                <td>
+                <tr>
                     <input type="number" 
                         name="rincian[${kelompok}][${subIndex}][${pesertaId}][${index}][tarif]" 
                         class="form-control form-control-sm tarif"

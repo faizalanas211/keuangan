@@ -91,6 +91,7 @@
                 <select name="jenis" class="form-select">
                     <option value="">-- Pilih Jenis --</option>
                     <option value="kuitansi_spd">Kuitansi dan SPD</option>
+                    <option value="amplop">Amplop</option>
                     <option value="slip_gaji">Slip Gaji</option>
                 </select>
             </div>
@@ -102,13 +103,13 @@
             </div>
 
             {{-- INFO TAMBAHAN --}}
-            <div class="alert alert-warning small">
+            <!-- <div class="alert alert-warning small">
                 Gunakan placeholder dengan format:
                 <br>
                 <span class="placeholder-tag">${nama_penerima}</span>,
                 <span class="placeholder-tag">${nip_penerima}</span>,
                 <span class="placeholder-tag">${sum_total}</span>, dll.
-            </div>
+            </div> -->
 
             {{-- Submit --}}
             <div class="text-end">

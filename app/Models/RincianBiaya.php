@@ -20,6 +20,7 @@ class RincianBiaya extends Model
         'satuan',
         'tarif',
         'total',
+        'masuk_amplop',
     ];
 
     // protected $casts = [

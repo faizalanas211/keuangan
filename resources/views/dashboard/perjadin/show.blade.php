@@ -337,10 +337,20 @@
                                         {{ $sub->tanggal_st ? \Carbon\Carbon::parse($sub->tanggal_st)->translatedFormat('d F Y') : '-' }}
                                     </small>
                                 </div>
-                                <span class="badge bg-success fs-6 px-3 py-2">
-                                    <i class="fas fa-rupiah-sign me-1"></i>
-                                    {{ number_format($totalST, 0, ',', '.') }}
-                                </span>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <a href="{{ route('perjadin.export.kuitansi.st', $sub->id) }}" 
+                                        class="btn btn-sm btn-outline-info">
+                                        <i class="fas fa-envelope me-1"></i> Export Kuitansi ST
+                                    </a>
+                                    <a href="{{ route('perjadin.export.amplop.st', $sub->id) }}" 
+                                        class="btn btn-sm btn-outline-info">
+                                        <i class="fas fa-envelope me-1"></i> Export Amplop ST
+                                    </a>
+                                    <span class="badge bg-success fs-6 px-3 py-2">
+                                        <i class="fas fa-rupiah-sign me-1"></i>
+                                        {{ number_format($totalST, 0, ',', '.') }}
+                                    </span>
+                                </div>
                             </div>
 
                             {{-- Body Sub Kelompok --}}

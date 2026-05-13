@@ -65,6 +65,10 @@
                         {{ $template->jenis == 'kuitansi_spd' ? 'selected' : '' }}>
                         Kuitansi dan SPD
                     </option>
+                    <option value="amplop"
+                        {{ $template->jenis == 'amplop' ? 'selected' : '' }}>
+                        Amplop
+                    </option>
                     <option value="slip_gaji"
                         {{ $template->jenis == 'slip_gaji' ? 'selected' : '' }}>
                         Slip Gaji
