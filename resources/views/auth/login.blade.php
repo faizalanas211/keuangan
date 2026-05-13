@@ -615,7 +615,7 @@
                                     <input type="text" 
                                            class="elegant-input" 
                                            name="login" 
-                                           placeholder="Masukkan username / email / NIP"
+                                           placeholder="Masukkan NIP"
                                            required 
                                            autocomplete="off"
                                            autofocus>

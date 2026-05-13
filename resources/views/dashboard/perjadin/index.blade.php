@@ -62,6 +62,9 @@
                         <th>Tanggal</th>
                         <th>Kegiatan</th>
                         <th>Peserta</th>
+                        @if(auth()->user()->role == 'admin')
+                        <th>Dibuat Oleh</th>
+                        @endif
                         <th width="180">Aksi</th>
                     </tr>
                 </thead>
@@ -72,10 +75,6 @@
                         <td>{{ $item->tingkat_perjalanan }}</td>
                         <td>
                             {{ $item->dari_kota }} ke {{ $item->tujuan_kota }}
-                            <br>
-                            <!-- <small>
-                                ke {{ $item->tujuan_kota }}
-                            </small> -->
                         </td>
                         <td>
                             {{ \Carbon\Carbon::parse($item->tanggal_mulai)->format('d M Y') }}
@@ -92,9 +91,16 @@
                                 {{ $item->pegawai->count() + $item->nonpegawai->count() }} Orang
                             </span>
                         </td>
+                        @if(auth()->user()->role == 'admin')
+                        <td>
+                            @php
+                                $createdBy = \App\Models\User::find($item->created_by);
+                            @endphp
+                            {{ $createdBy ? $createdBy->name : '-' }}
+                        </td>
+                        @endif
                         <td>
                             <div class="d-flex gap-4">
-
                                 {{-- Detail --}}
                                 <a href="{{ route('perjadin.show',$item->id) }}"
                                 class="text-primary"
@@ -121,13 +127,12 @@
                                         <i class="bi bi-trash fs-5"></i>
                                     </button>
                                 </form>
-
                             </div>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="text-center text-muted">
+                        <td colspan="{{ auth()->user()->role == 'admin' ? 8 : 7 }}" class="text-center text-muted">
                             Belum ada data perjalanan dinas
                         </td>
                     </tr>

@@ -175,7 +175,7 @@
         </div>
         
         {{-- Tombol Export Massal - Versi Ringkas --}}
-        <div class="dropdown mt-2 mt-sm-0">
+        <!-- <div class="dropdown mt-2 mt-sm-0">
             <button class="btn btn-success dropdown-toggle px-4 py-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="fas fa-download me-2"></i>Export Data
             </button>
@@ -200,7 +200,7 @@
                     </a>
                 </li>
             </ul>
-        </div>
+        </div> -->
     </div>
 
     {{-- ================= INFORMASI PERJALANAN ================= --}}
@@ -354,18 +354,21 @@
                                                     <i class="fas fa-file-excel me-2 text-primary"></i> SBY per ST
                                                 </a>
                                             </li>
+                                            <li>
+                                                <a class="dropdown-item" href="{{ route('perjadin.export.kuitansi.st', $sub->id) }}">
+                                                    <i class="fas fa-file-excel me-2 text-primary"></i> Kuitansi per ST
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="{{ route('perjadin.export.amplop.st', $sub->id) }}">
+                                                    <i class="fas fa-file-excel me-2 text-primary"></i> Amplop per ST
+                                                </a>
+                                            </li>
                                         </ul>
                                     </div>
                                     {{-- ================================================================= --}}
                                     <div class="d-flex gap-2 align-items-center">
-                                    <a href="{{ route('perjadin.export.kuitansi.st', $sub->id) }}" 
-                                        class="btn btn-sm btn-outline-info">
-                                        <i class="fas fa-envelope me-1"></i> Export Kuitansi ST
-                                    </a>
-                                    <a href="{{ route('perjadin.export.amplop.st', $sub->id) }}" 
-                                        class="btn btn-sm btn-outline-info">
-                                        <i class="fas fa-envelope me-1"></i> Export Amplop ST
-                                    </a>
+                                    
                                     <span class="badge bg-success fs-6 px-3 py-2">
                                             <i class="fas fa-rupiah-sign me-1"></i>
                                             {{ number_format($totalST, 0, ',', '.') }}

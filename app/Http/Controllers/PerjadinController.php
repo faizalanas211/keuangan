@@ -40,11 +40,26 @@ class PerjadinController extends Controller
 {
     public function index()
     {
-        $perjalanans = PerjalananDinas::with('pegawai')
-                        ->latest()
-                        ->paginate(10);
+        $user = Auth::user();
 
-        return view('dashboard.perjadin.index', compact('perjalanans'));
+        if (strtolower($user->role) === 'admin') {
+
+            $perjalanans = PerjalananDinas::with('pegawai')
+                ->latest()
+                ->paginate(10);
+
+        } else {
+
+            $perjalanans = PerjalananDinas::with('pegawai')
+                ->where('created_by', $user->id)
+                ->latest()
+                ->paginate(10);
+        }
+
+        return view(
+            'dashboard.perjadin.index',
+            compact('perjalanans')
+        );
     }
 
     public function create()
@@ -825,387 +840,880 @@ public function edit($id)
     }
 
     public function exportKuitansi($id)
-    {
-        $pp = PerjalananDinasPegawai::with([
-            'pegawai',
-            'perjalananDinas.surat',
-            'rincian.jenisBiaya',
-            'subKelompok',
-        ])->findOrFail($id);
+{
+    $pp = PerjalananDinasPegawai::with([
+        'pegawai',
+        'perjalananDinas.surat',
+        'rincian.jenisBiaya',
+        'subKelompok',
+    ])->findOrFail($id);
 
-        $perjalanan = $pp->perjalananDinas;
-        $pegawai    = $pp->pegawai;
+    $perjalanan = $pp->perjalananDinas;
+    $pegawai    = $pp->pegawai;
 
-        $tanggal = $perjalanan->tanggal_mulai;
-        $tanggalMulai = Carbon::parse($perjalanan->tanggal_mulai);
-        $tanggalAkhir = Carbon::parse($perjalanan->tanggal_akhir);
+    $tanggal = $perjalanan->tanggal_mulai;
 
-        // lama perjalanan (hari)
-        $lamaPerjalanan = $tanggalMulai->diffInDays($tanggalAkhir) + 1;
+    $tanggalMulai = Carbon::parse(
+        $perjalanan->tanggal_mulai
+    );
 
-        $bendahara = PejabatPeriode::getByTanggal('Bendahara Pengeluaran', $tanggal);
-        $ppk       = PejabatPeriode::getByTanggal('Pejabat Pembuat Komitmen', $tanggal);
+    $tanggalAkhir = Carbon::parse(
+        $perjalanan->tanggal_akhir
+    );
 
-        $rincian = $pp->rincian;
-        $sumTotal = $rincian->sum('total');
+    $lamaPerjalanan = $tanggalMulai
+        ->diffInDays($tanggalAkhir) + 1;
 
-        // ===============================
-        // LOAD TEMPLATE
-        // ===============================
-        $templateFile = Template::where('jenis', 'kuitansi_spd')
-                        ->latest()
-                        ->first();
+    $bendahara = PejabatPeriode::getByTanggal(
+        'Bendahara Pengeluaran',
+        $tanggal
+    );
 
-        $template = new TemplateProcessor(
-                        storage_path('app/public/' . $templateFile->file_path)
-                    );
+    $ppk = PejabatPeriode::getByTanggal(
+        'Pejabat Pembuat Komitmen',
+        $tanggal
+    );
 
-        // ===============================
-        // SET DATA UMUM
-        // ===============================
-        $data = [
-            'tahun_anggaran'   => $this->safeValue($perjalanan->tahun_anggaran ?? date('Y')),
-            'beban_mak'        => $this->safeValue($perjalanan->kode_mak ?? '-'),
+    $rincian = $pp->rincian;
 
-            'jumlah_rupiah' => 'Rp' . number_format($sumTotal, 0, ',', '.'),
-            'terbilang'     => $this->safeValue($this->terbilang($sumTotal)),
-            'keperluan'     => $this->safeValue($perjalanan->nama_kegiatan ?? '-'),
-            'nomor_spd'     => $this->safeValue($pp->subKelompok->nomor_st ?? '-'),
-            'tanggal_spd'   => $pp->subKelompok->tanggal_st
-                ? Carbon::parse($pp->tanggal_st)->translatedFormat('d F Y')
-                : $this->safeValue('-'),
-            'tujuan'        => $this->safeValue($perjalanan->tujuan_kota ?? '-'),
+    $sumTotal = $rincian->sum('total');
 
-            // PERJALANAN
-            'nama_kegiatan'   => $this->safeValue($perjalanan->nama_kegiatan ?? '-'),
-            'alat_angkutan'   => $this->safeValue($perjalanan->alat_angkutan ?? '-'),
-            'dari_kota'       => $this->safeValue($perjalanan->dari_kota ?? '-'),
-            'tujuan_kota'     => $this->safeValue($perjalanan->tujuan_kota ?? '-'),
-            'tingkat_perjalanan' => $this->safeValue($perjalanan->tingkat_perjalanan ?? '-'),
+    // ===============================
+    // LOAD TEMPLATE
+    // ===============================
+    $templateFile = Template::where(
+            'jenis',
+            'kuitansi_spd'
+        )
+        ->latest()
+        ->first();
 
-            // TANGGAL
-            'tanggal_mulai' => $tanggalMulai->translatedFormat('d F Y'),
-            'tanggal_akhir' => $tanggalAkhir->translatedFormat('d F Y'),
-            'lama_perjalanan' => $lamaPerjalanan . ' hari',
+    $template = new TemplateProcessor(
+        storage_path(
+            'app/public/' . $templateFile->file_path
+        )
+    );
 
-            // TANGGAL TERIMA 
-            'tanggal_terima' => $perjalanan->tanggal_terima
-                            ? Carbon::parse($perjalanan->tanggal_terima)->translatedFormat('d F Y')
-                            : $this->safeValue('-'),
+    // ===============================
+    // HANDLE BLOCK_KUITANSI
+    // ===============================
+    $template->cloneBlock(
+        'block_kuitansi',
+        1,
+        true,
+        true
+    );
 
-            // Penerima
-            'nama_penerima' => $this->safeValue($pegawai->nama),
-            'nip_penerima'  => $this->safeValue($pegawai->nip),
-            'pangkat_golongan_penerima' => $this->safeValue($pegawai->pangkat_golongan ?? '-'),
-            'jabatan_penerima' => $this->safeValue($pegawai->jabatan ?? '-'),
+    // ===============================
+    // SET DATA UMUM
+    // ===============================
+    $data = [
 
-            // Bendahara
-            'nama_bendahara' => $this->safeValue($bendahara?->pegawai?->nama ?? '-'),
-            'nip_bendahara'  => $this->safeValue($bendahara?->pegawai?->nip ?? '-'),
+        'tahun_anggaran#1' => $this->safeValue(
+            $perjalanan->tahun_anggaran ?? date('Y')
+        ),
 
-            // PPK
-            'nama_ppk'       => $this->safeValue($ppk?->pegawai?->nama ?? '-'),
-            'nip_ppk'        => $this->safeValue($ppk?->pegawai?->nip ?? '-'),
+        'beban_mak#1' => $this->safeValue(
+            $perjalanan->kode_mak ?? '-'
+        ),
 
-            'sum_total'     => number_format($sumTotal, 0, ',', '.'),
-        ];
+        'jumlah_rupiah#1' => 'Rp'
+            . number_format(
+                $sumTotal,
+                0,
+                ',',
+                '.'
+            ),
 
-        foreach ($data as $key => $value) {
-            $template->setValue($key, $value ?? '-');
-        }
+        'terbilang#1' => $this->safeValue(
+            $this->terbilang($sumTotal)
+        ),
 
-        // ===============================
-        // RINCIAN DINAMIS 
-        // ===============================
-        $template->cloneRow('no', $rincian->count());
+        'keperluan#1' => $this->safeValue(
+            $perjalanan->nama_kegiatan ?? '-'
+        ),
+
+        'nomor_spd#1' => $this->safeValue(
+            $pp->subKelompok->nomor_st ?? '-'
+        ),
+
+        'tanggal_spd#1' => $pp->subKelompok->tanggal_st
+            ? Carbon::parse(
+                $pp->subKelompok->tanggal_st
+            )->translatedFormat('d F Y')
+            : $this->safeValue('-'),
+
+        'tujuan#1' => $this->safeValue(
+            $perjalanan->tujuan_kota ?? '-'
+        ),
+
+        // PERJALANAN
+        'nama_kegiatan#1' => $this->safeValue(
+            $perjalanan->nama_kegiatan ?? '-'
+        ),
+
+        'alat_angkutan#1' => $this->safeValue(
+            $perjalanan->alat_angkutan ?? '-'
+        ),
+
+        'dari_kota#1' => $this->safeValue(
+            $perjalanan->dari_kota ?? '-'
+        ),
+
+        'tujuan_kota#1' => $this->safeValue(
+            $perjalanan->tujuan_kota ?? '-'
+        ),
+
+        'tingkat_perjalanan#1' => $this->safeValue(
+            $perjalanan->tingkat_perjalanan ?? '-'
+        ),
+
+        // TANGGAL
+        'tanggal_mulai#1' => $tanggalMulai
+            ->translatedFormat('d F Y'),
+
+        'tanggal_akhir#1' => $tanggalAkhir
+            ->translatedFormat('d F Y'),
+
+        'lama_perjalanan#1' => $lamaPerjalanan . ' hari',
+
+        // TANGGAL TERIMA
+        'tanggal_terima#1' => $perjalanan->tanggal_terima
+            ? Carbon::parse(
+                $perjalanan->tanggal_terima
+            )->translatedFormat('d F Y')
+            : $this->safeValue('-'),
+
+        // PENERIMA
+        'nama_penerima#1' => $this->safeValue(
+            $pegawai->nama
+        ),
+
+        'nip_penerima#1' => $this->safeValue(
+            $pegawai->nip
+        ),
+
+        'pangkat_golongan_penerima#1' => $this->safeValue(
+            $pegawai->pangkat_golongan ?? '-'
+        ),
+
+        'jabatan_penerima#1' => $this->safeValue(
+            $pegawai->jabatan ?? '-'
+        ),
+
+        // BENDAHARA
+        'nama_bendahara#1' => $this->safeValue(
+            $bendahara?->pegawai?->nama ?? '-'
+        ),
+
+        'nip_bendahara#1' => $this->safeValue(
+            $bendahara?->pegawai?->nip ?? '-'
+        ),
+
+        // PPK
+        'nama_ppk#1' => $this->safeValue(
+            $ppk?->pegawai?->nama ?? '-'
+        ),
+
+        'nip_ppk#1' => $this->safeValue(
+            $ppk?->pegawai?->nip ?? '-'
+        ),
+
+        'sum_total#1' => number_format(
+            $sumTotal,
+            0,
+            ',',
+            '.'
+        ),
+    ];
+
+    foreach ($data as $key => $value) {
+
+        $template->setValue(
+            $key,
+            $value ?? '-'
+        );
+    }
+
+    // ===============================
+    // RINCIAN DINAMIS
+    // ===============================
+    if ($rincian->isEmpty()) {
+
+        $template->setValue(
+            'no#1',
+            '-'
+        );
+
+        $template->setValue(
+            'uraian#1',
+            '-'
+        );
+
+        $template->setValue(
+            'jumlah#1',
+            '-'
+        );
+
+        $template->setValue(
+            'keterangan#1',
+            '-'
+        );
+
+    } else {
+
+        $template->cloneRow(
+            'no#1',
+            $rincian->count()
+        );
 
         foreach ($rincian as $i => $r) {
 
             $index = $i + 1;
 
-            $jenis = $this->safeValue($r->jenisBiaya->nama_biaya);
-            $detail = $this->safeValue($r->uraian);
+            $jenis = $this->safeValue(
+                $r->jenisBiaya->nama_biaya
+            );
+
+            $detail = $this->safeValue(
+                $r->uraian
+            );
 
             $uraian = $jenis;
 
             if (!empty($r->uraian)) {
+
                 $uraian .= " ({$detail})";
             }
 
             $volume = (int) $r->volume;
 
             if ($r->volume && $r->tarif) {
-                $uraian .= " : {$volume} {$this->safeValue($r->satuan)} x Rp"
-            . number_format($r->tarif, 0, ',', '.');
+
+                $uraian .= " : {$volume} "
+                    . $this->safeValue($r->satuan)
+                    . " x Rp"
+                    . number_format(
+                        $r->tarif,
+                        0,
+                        ',',
+                        '.'
+                    );
             }
 
-            $template->setValue("no#{$index}", $index);
-            $template->setValue("uraian#{$index}", $uraian);
-            $template->setValue("jumlah#{$index}", 'Rp' . number_format($r->total, 0, ',', '.'));
-            $template->setValue("keterangan#{$index}", $this->safeValue('-'));
+            $template->setValue(
+                "no#1#{$index}",
+                $index
+            );
+
+            $template->setValue(
+                "uraian#1#{$index}",
+                $uraian
+            );
+
+            $template->setValue(
+                "jumlah#1#{$index}",
+                'Rp' . number_format(
+                    $r->total,
+                    0,
+                    ',',
+                    '.'
+                )
+            );
+
+            $template->setValue(
+                "keterangan#1#{$index}",
+                '-'
+            );
+        }
+    }
+
+    // ===============================
+    // RINCIAN RIIL
+    // ===============================
+    $rincianRiil = $rincian
+    ->filter(function ($r) {
+
+        $nama = strtolower(
+            $r->jenisBiaya->nama_biaya
+        );
+
+        $keywords = [
+            'taksi',
+            'transport',
+        ];
+
+        foreach ($keywords as $keyword) {
+
+            if (str_contains($nama, $keyword)) {
+                return true;
+            }
         }
 
-        $rincianRiil = $rincian->filter(function ($r) {
-            $nama = strtolower($r->jenisBiaya->nama_biaya);
+        return false;
+    })
+    ->values();
 
-            return str_contains($nama, 'taksi');
-        })->values();
+    if ($rincianRiil->count() == 1) {
 
-        if ($rincianRiil->count() == 1) {
+        $r = $rincianRiil->first();
 
-            $r = $rincianRiil->first();
+        $uraian = $r->uraian
+            ? $this->safeValue(
+                $r->jenisBiaya->nama_biaya
+            ) . ' (' . $this->safeValue(
+                $r->uraian
+            ) . ')'
+            : $this->safeValue(
+                $r->jenisBiaya->nama_biaya
+            );
+
+        $template->setValue(
+            'no_riil#1',
+            1
+        );
+
+        $template->setValue(
+            'uraian_riil#1',
+            $uraian
+        );
+
+        $template->setValue(
+            'jumlah_riil#1',
+            'Rp' . number_format(
+                $r->total,
+                0,
+                ',',
+                '.'
+            )
+        );
+
+    } elseif ($rincianRiil->isEmpty()) {
+
+        $template->setValue(
+            'no_riil#1',
+            '-'
+        );
+
+        $template->setValue(
+            'uraian_riil#1',
+            '-'
+        );
+
+        $template->setValue(
+            'jumlah_riil#1',
+            '-'
+        );
+
+    } else {
+
+        $template->cloneRow(
+            'no_riil#1',
+            $rincianRiil->count()
+        );
+
+        foreach ($rincianRiil as $i => $r) {
+
+            $index = $i + 1;
 
             $uraian = $r->uraian
-                ? $this->safeValue($r->jenisBiaya->nama_biaya) . ' (' . $this->safeValue($r->uraian) . ')'
-                : $this->safeValue($r->jenisBiaya->nama_biaya);
+                ? $this->safeValue(
+                    $r->jenisBiaya->nama_biaya
+                ) . ' (' . $this->safeValue(
+                    $r->uraian
+                ) . ')'
+                : $this->safeValue(
+                    $r->jenisBiaya->nama_biaya
+                );
 
-            // TANPA #1
-            $template->setValue('no_riil', 1);
-            $template->setValue('uraian_riil', $uraian);
             $template->setValue(
-                'jumlah_riil',
-                'Rp' . number_format($r->total, 0, ',', '.')
+                "no_riil#1#{$index}",
+                $index
             );
 
-        } elseif ($rincianRiil->isEmpty()) {
+            $template->setValue(
+                "uraian_riil#1#{$index}",
+                $uraian
+            );
 
-            // optional: tetap 1 baris kosong
-            $template->setValue('no_riil', $this->safeValue('-'));
-            $template->setValue('uraian_riil', $this->safeValue('-'));
-            $template->setValue('jumlah_riil', $this->safeValue('-'));
-
-        } else {
-
-            $template->cloneRow('no_riil', $rincianRiil->count());
-
-            foreach ($rincianRiil as $i => $r) {
-
-                $index = $i + 1;
-
-                $uraian = $r->uraian
-                    ? $this->safeValue($r->jenisBiaya->nama_biaya) . ' (' . $this->safeValue($r->uraian) . ')'
-                    : $this->safeValue($r->jenisBiaya->nama_biaya);
-
-                $template->setValue("no_riil#{$index}", $index);
-                $template->setValue("uraian_riil#{$index}", $uraian);
-                $template->setValue(
-                    "jumlah_riil#{$index}",
-                    'Rp' . number_format($r->total, 0, ',', '.')
-                );
-            }
+            $template->setValue(
+                "jumlah_riil#1#{$index}",
+                'Rp' . number_format(
+                    $r->total,
+                    0,
+                    ',',
+                    '.'
+                )
+            );
         }
-
-        $sumTotalRiil = $rincianRiil->sum('total');
-
-        $template->setValue(
-            'sum_total_riil',
-            number_format($sumTotalRiil, 0, ',', '.')
-        );
-
-        // ===============================
-        // GENERATE FILE
-        // ===============================
-        $fileName = 'Kuitansi_' . str_replace('/', '-', $perjalanan->surat->nomor_st ?? 'SPD') 
-                    . '_' . $pegawai->nama . '.docx';
-
-        $savePath = storage_path($fileName);
-
-        $template->saveAs($savePath);
-
-        return response()->download($savePath)->deleteFileAfterSend(true);
     }
 
+    $sumTotalRiil = $rincianRiil->sum('total');
+
+    $template->setValue(
+        'sum_total_riil#1',
+        number_format(
+            $sumTotalRiil,
+            0,
+            ',',
+            '.'
+        )
+    );
+
+    // ===============================
+    // GENERATE FILE
+    // ===============================
+    $fileName = 'Kuitansi_'
+        . str_replace(
+            '/',
+            '-',
+            $perjalanan->surat->nomor_st ?? 'SPD'
+        )
+        . '_'
+        . $pegawai->nama
+        . '.docx';
+
+    $savePath = storage_path($fileName);
+
+    $template->saveAs($savePath);
+
+    return response()
+        ->download($savePath)
+        ->deleteFileAfterSend(true);
+}
+
    public function exportKuitansiNonPegawai($npId)
-    {
-        $np = NonPegawai::with([
-            'perjalananDinas.surat',
-            'rincian.jenisBiaya',
-            'subKelompok',
-        ])->findOrFail($npId);
+{
+    $np = NonPegawai::with([
+        'perjalananDinas.surat',
+        'rincian.jenisBiaya',
+        'subKelompok',
+    ])->findOrFail($npId);
 
-        $perjalanan = $np->perjalananDinas;
+    $perjalanan = $np->perjalananDinas;
 
-        $tanggal = $perjalanan->tanggal_mulai;
-        $tanggalMulai = Carbon::parse($perjalanan->tanggal_mulai);
-        $tanggalAkhir = Carbon::parse($perjalanan->tanggal_akhir);
+    $tanggal = $perjalanan->tanggal_mulai;
 
-        // lama perjalanan (hari)
-        $lamaPerjalanan = $tanggalMulai->diffInDays($tanggalAkhir) + 1;
+    $tanggalMulai = Carbon::parse(
+        $perjalanan->tanggal_mulai
+    );
 
-        $bendahara = PejabatPeriode::getByTanggal('Bendahara Pengeluaran', $tanggal);
-        $ppk       = PejabatPeriode::getByTanggal('Pejabat Pembuat Komitmen', $tanggal);
+    $tanggalAkhir = Carbon::parse(
+        $perjalanan->tanggal_akhir
+    );
 
-        $rincian = $np->rincian;
-        $sumTotal = $rincian->sum('total');
+    // lama perjalanan
+    $lamaPerjalanan = $tanggalMulai
+        ->diffInDays($tanggalAkhir) + 1;
 
-        // ===============================
-        // LOAD TEMPLATE
-        // ===============================
-        $templateFile = Template::where('jenis', 'kuitansi_spd')
-                        ->latest()
-                        ->first();
+    $bendahara = PejabatPeriode::getByTanggal(
+        'Bendahara Pengeluaran',
+        $tanggal
+    );
 
-        $template = new TemplateProcessor(
-                        storage_path('app/public/' . $templateFile->file_path)
-                    );
+    $ppk = PejabatPeriode::getByTanggal(
+        'Pejabat Pembuat Komitmen',
+        $tanggal
+    );
 
-        // ===============================
-        // SET DATA UMUM
-        // ===============================
-        $data = [
-            'tahun_anggaran'   => $this->safeValue($perjalanan->tahun_anggaran ?? date('Y')),
-            'beban_mak'        => $this->safeValue($perjalanan->kode_mak ?? '-'),
+    $rincian = $np->rincian;
 
-            'jumlah_rupiah' => 'Rp' . number_format($sumTotal, 0, ',', '.'),
-            'terbilang'     => $this->safeValue($this->terbilang($sumTotal)),
-            'keperluan'     => $this->safeValue($perjalanan->nama_kegiatan ?? '-'),
-            'nomor_spd'     => $this->safeValue($np->subKelompok->nomor_st ?? '-'),
-            'tanggal_spd'   => $np->subKelompok->tanggal_st
-                ? Carbon::parse($np->tanggal_st)->translatedFormat('d F Y')
-                : $this->safeValue('-'),
-            'tujuan'        => $this->safeValue($perjalanan->tujuan_kota ?? '-'),
+    $sumTotal = $rincian->sum('total');
 
-            // PERJALANAN
-            'nama_kegiatan'   => $this->safeValue($perjalanan->nama_kegiatan ?? '-'),
-            'alat_angkutan'   => $this->safeValue($perjalanan->alat_angkutan ?? '-'),
-            'dari_kota'       => $this->safeValue($perjalanan->dari_kota ?? '-'),
-            'tujuan_kota'     => $this->safeValue($perjalanan->tujuan_kota ?? '-'),
-            'tingkat_perjalanan' => $this->safeValue($perjalanan->tingkat_perjalanan ?? '-'),
+    // ===============================
+    // LOAD TEMPLATE
+    // ===============================
+    $templateFile = Template::where(
+            'jenis',
+            'kuitansi_spd'
+        )
+        ->latest()
+        ->first();
 
-            // TANGGAL
-            'tanggal_mulai' => $tanggalMulai->translatedFormat('d F Y'),
-            'tanggal_akhir' => $tanggalAkhir->translatedFormat('d F Y'),
-            'lama_perjalanan' => $lamaPerjalanan . ' hari',
+    $template = new TemplateProcessor(
+        storage_path(
+            'app/public/' . $templateFile->file_path
+        )
+    );
 
-            // TANGGAL TERIMA 
-            'tanggal_terima' => $perjalanan->tanggal_terima
-                            ? Carbon::parse($perjalanan->tanggal_terima)->translatedFormat('d F Y')
-                            : $this->safeValue('-'),
+    // ===============================
+    // HANDLE BLOCK_KUITANSI
+    // ===============================
+    $template->cloneBlock(
+        'block_kuitansi',
+        1,
+        true,
+        true
+    );
 
-            // Penerima (Non Pegawai)
-            'nama_penerima' => $this->safeValue($np->nama),
-            'nip_penerima'  => $this->safeValue($np->nik),
-            'pangkat_golongan_penerima' => $this->safeValue($np->instansi ?? '-'),
-            'jabatan_penerima' => $this->safeValue($np->instansi ?? '-'),
+    // ===============================
+    // DATA UMUM
+    // ===============================
+    $data = [
 
-            // Bendahara
-            'nama_bendahara' => $this->safeValue($bendahara?->pegawai?->nama ?? '-'),
-            'nip_bendahara'  => $this->safeValue($bendahara?->pegawai?->nip ?? '-'),
+        'tahun_anggaran#1' => $this->safeValue(
+            $perjalanan->tahun_anggaran ?? date('Y')
+        ),
 
-            // PPK
-            'nama_ppk'       => $this->safeValue($ppk?->pegawai?->nama ?? '-'),
-            'nip_ppk'        => $this->safeValue($ppk?->pegawai?->nip ?? '-'),
+        'beban_mak#1' => $this->safeValue(
+            $perjalanan->kode_mak ?? '-'
+        ),
 
-            'sum_total'     => number_format($sumTotal, 0, ',', '.'),
-        ];
+        'jumlah_rupiah#1' => 'Rp'
+            . number_format(
+                $sumTotal,
+                0,
+                ',',
+                '.'
+            ),
 
-        foreach ($data as $key => $value) {
-            $template->setValue($key, $value ?? '-');
-        }
+        'terbilang#1' => $this->safeValue(
+            $this->terbilang($sumTotal)
+        ),
 
-        // ===============================
-        // RINCIAN DINAMIS 
-        // ===============================
-        $template->cloneRow('no', $rincian->count());
+        'keperluan#1' => $this->safeValue(
+            $perjalanan->nama_kegiatan ?? '-'
+        ),
+
+        'nomor_spd#1' => $this->safeValue(
+            $np->subKelompok->nomor_st ?? '-'
+        ),
+
+        'tanggal_spd#1' => $np->subKelompok->tanggal_st
+            ? Carbon::parse(
+                $np->subKelompok->tanggal_st
+            )->translatedFormat('d F Y')
+            : $this->safeValue('-'),
+
+        'tujuan#1' => $this->safeValue(
+            $perjalanan->tujuan_kota ?? '-'
+        ),
+
+        // PERJALANAN
+        'nama_kegiatan#1' => $this->safeValue(
+            $perjalanan->nama_kegiatan ?? '-'
+        ),
+
+        'alat_angkutan#1' => $this->safeValue(
+            $perjalanan->alat_angkutan ?? '-'
+        ),
+
+        'dari_kota#1' => $this->safeValue(
+            $perjalanan->dari_kota ?? '-'
+        ),
+
+        'tujuan_kota#1' => $this->safeValue(
+            $perjalanan->tujuan_kota ?? '-'
+        ),
+
+        'tingkat_perjalanan#1' => $this->safeValue(
+            $perjalanan->tingkat_perjalanan ?? '-'
+        ),
+
+        // TANGGAL
+        'tanggal_mulai#1' => $tanggalMulai
+            ->translatedFormat('d F Y'),
+
+        'tanggal_akhir#1' => $tanggalAkhir
+            ->translatedFormat('d F Y'),
+
+        'lama_perjalanan#1' => $lamaPerjalanan . ' hari',
+
+        // TANGGAL TERIMA
+        'tanggal_terima#1' => $perjalanan->tanggal_terima
+            ? Carbon::parse(
+                $perjalanan->tanggal_terima
+            )->translatedFormat('d F Y')
+            : $this->safeValue('-'),
+
+        // PENERIMA NON PEGAWAI
+        'nama_penerima#1' => $this->safeValue(
+            $np->nama
+        ),
+
+        'nip_penerima#1' => $this->safeValue(
+            $np->nik
+        ),
+
+        'pangkat_golongan_penerima#1' => $this->safeValue(
+            $np->instansi ?? '-'
+        ),
+
+        'jabatan_penerima#1' => $this->safeValue(
+            $np->instansi ?? '-'
+        ),
+
+        // BENDAHARA
+        'nama_bendahara#1' => $this->safeValue(
+            $bendahara?->pegawai?->nama ?? '-'
+        ),
+
+        'nip_bendahara#1' => $this->safeValue(
+            $bendahara?->pegawai?->nip ?? '-'
+        ),
+
+        // PPK
+        'nama_ppk#1' => $this->safeValue(
+            $ppk?->pegawai?->nama ?? '-'
+        ),
+
+        'nip_ppk#1' => $this->safeValue(
+            $ppk?->pegawai?->nip ?? '-'
+        ),
+
+        'sum_total#1' => number_format(
+            $sumTotal,
+            0,
+            ',',
+            '.'
+        ),
+    ];
+
+    foreach ($data as $key => $value) {
+
+        $template->setValue(
+            $key,
+            $value ?? '-'
+        );
+    }
+
+    // ===============================
+    // RINCIAN DINAMIS
+    // ===============================
+    if ($rincian->isEmpty()) {
+
+        $template->setValue(
+            'no#1',
+            '-'
+        );
+
+        $template->setValue(
+            'uraian#1',
+            '-'
+        );
+
+        $template->setValue(
+            'jumlah#1',
+            '-'
+        );
+
+        $template->setValue(
+            'keterangan#1',
+            '-'
+        );
+
+    } else {
+
+        $template->cloneRow(
+            'no#1',
+            $rincian->count()
+        );
 
         foreach ($rincian as $i => $r) {
 
             $index = $i + 1;
 
-            $jenis = $this->safeValue($r->jenisBiaya->nama_biaya);
-            $detail = $this->safeValue($r->uraian);
+            $jenis = $this->safeValue(
+                $r->jenisBiaya->nama_biaya
+            );
+
+            $detail = $this->safeValue(
+                $r->uraian
+            );
 
             $uraian = $jenis;
 
             if (!empty($r->uraian)) {
+
                 $uraian .= " ({$detail})";
             }
 
             $volume = (int) $r->volume;
 
             if ($r->volume && $r->tarif) {
-                $uraian .= " : {$volume} {$this->safeValue($r->satuan)} x Rp"
-            . number_format($r->tarif, 0, ',', '.');
+
+                $uraian .= " : {$volume} "
+                    . $this->safeValue($r->satuan)
+                    . " x Rp"
+                    . number_format(
+                        $r->tarif,
+                        0,
+                        ',',
+                        '.'
+                    );
             }
 
-            $template->setValue("no#{$index}", $index);
-            $template->setValue("uraian#{$index}", $uraian);
-            $template->setValue("jumlah#{$index}", 'Rp' . number_format($r->total, 0, ',', '.'));
-            $template->setValue("keterangan#{$index}", $this->safeValue('-'));
-        }
-
-        // ===============================
-        // RINCIAN RIIL (TAKSI/DLL)
-        // ===============================
-        $rincianRiil = $rincian->filter(function ($r) {
-            $nama = strtolower($r->jenisBiaya->nama_biaya);
-
-            return str_contains($nama, 'taksi');
-        })->values();
-
-        if ($rincianRiil->count() == 1) {
-
-            $r = $rincianRiil->first();
-
-            $uraian = !empty($r->uraian)
-                ? $this->safeValue($r->jenisBiaya->nama_biaya) . ' (' . $this->safeValue($r->uraian) . ')'
-                : $this->safeValue($r->jenisBiaya->nama_biaya);
-
-            // TANPA #1
-            $template->setValue('no_riil', 1);
-            $template->setValue('uraian_riil', $uraian);
             $template->setValue(
-                'jumlah_riil',
-                'Rp' . number_format($r->total, 0, ',', '.')
+                "no#1#{$index}",
+                $index
             );
 
-        } elseif ($rincianRiil->isEmpty()) {
+            $template->setValue(
+                "uraian#1#{$index}",
+                $uraian
+            );
 
-            // optional: tetap 1 baris kosong
-            $template->setValue('no_riil', $this->safeValue('-'));
-            $template->setValue('uraian_riil', $this->safeValue('-'));
-            $template->setValue('jumlah_riil', $this->safeValue('-'));
+            $template->setValue(
+                "jumlah#1#{$index}",
+                'Rp' . number_format(
+                    $r->total,
+                    0,
+                    ',',
+                    '.'
+                )
+            );
 
-        } else {
-
-            $template->cloneRow('no_riil', $rincianRiil->count());
-
-            foreach ($rincianRiil as $i => $r) {
-
-                $index = $i + 1;
-
-                $uraian = !empty($r->uraian)
-                    ? $this->safeValue($r->jenisBiaya->nama_biaya) . ' (' . $this->safeValue($r->uraian) . ')'
-                    : $this->safeValue($r->jenisBiaya->nama_biaya);
-
-                $template->setValue("no_riil#{$index}", $index);
-                $template->setValue("uraian_riil#{$index}", $uraian);
-                $template->setValue(
-                    "jumlah_riil#{$index}",
-                    'Rp' . number_format($r->total, 0, ',', '.')
-                );
-            }
+            $template->setValue(
+                "keterangan#1#{$index}",
+                '-'
+            );
         }
+    }
 
-        $sumTotalRiil = $rincianRiil->sum('total');
+    // ===============================
+    // RINCIAN RIIL
+    // ===============================
+    $rincianRiil = $rincian
+        ->filter(function ($r) {
+
+            $nama = strtolower(
+                $r->jenisBiaya->nama_biaya
+            );
+
+            return str_contains(
+                $nama,
+                'taksi'
+            );
+        })
+        ->values();
+
+    if ($rincianRiil->count() == 1) {
+
+        $r = $rincianRiil->first();
+
+        $uraian = !empty($r->uraian)
+            ? $this->safeValue(
+                $r->jenisBiaya->nama_biaya
+            ) . ' (' . $this->safeValue(
+                $r->uraian
+            ) . ')'
+            : $this->safeValue(
+                $r->jenisBiaya->nama_biaya
+            );
 
         $template->setValue(
-            'sum_total_riil',
-            number_format($sumTotalRiil, 0, ',', '.')
+            'no_riil#1',
+            1
         );
 
-        // ===============================
-        // GENERATE FILE
-        // ===============================
-        $fileName = 'Kuitansi_' . str_replace('/', '-', $perjalanan->surat->nomor_st ?? 'SPD') 
-                    . '_' . $np->nama . '.docx';
+        $template->setValue(
+            'uraian_riil#1',
+            $uraian
+        );
 
-        $savePath = storage_path($fileName);
+        $template->setValue(
+            'jumlah_riil#1',
+            'Rp' . number_format(
+                $r->total,
+                0,
+                ',',
+                '.'
+            )
+        );
 
-        $template->saveAs($savePath);
+    } elseif ($rincianRiil->isEmpty()) {
 
-        return response()->download($savePath)->deleteFileAfterSend(true);
+        $template->setValue(
+            'no_riil#1',
+            '-'
+        );
+
+        $template->setValue(
+            'uraian_riil#1',
+            '-'
+        );
+
+        $template->setValue(
+            'jumlah_riil#1',
+            '-'
+        );
+
+    } else {
+
+        $template->cloneRow(
+            'no_riil#1',
+            $rincianRiil->count()
+        );
+
+        foreach ($rincianRiil as $i => $r) {
+
+            $index = $i + 1;
+
+            $uraian = !empty($r->uraian)
+                ? $this->safeValue(
+                    $r->jenisBiaya->nama_biaya
+                ) . ' (' . $this->safeValue(
+                    $r->uraian
+                ) . ')'
+                : $this->safeValue(
+                    $r->jenisBiaya->nama_biaya
+                );
+
+            $template->setValue(
+                "no_riil#1#{$index}",
+                $index
+            );
+
+            $template->setValue(
+                "uraian_riil#1#{$index}",
+                $uraian
+            );
+
+            $template->setValue(
+                "jumlah_riil#1#{$index}",
+                'Rp' . number_format(
+                    $r->total,
+                    0,
+                    ',',
+                    '.'
+                )
+            );
+        }
     }
+
+    $sumTotalRiil = $rincianRiil->sum('total');
+
+    $template->setValue(
+        'sum_total_riil#1',
+        number_format(
+            $sumTotalRiil,
+            0,
+            ',',
+            '.'
+        )
+    );
+
+    // ===============================
+    // GENERATE FILE
+    // ===============================
+    $fileName = 'Kuitansi_'
+        . str_replace(
+            '/',
+            '-',
+            $perjalanan->surat->nomor_st ?? 'SPD'
+        )
+        . '_'
+        . $np->nama
+        . '.docx';
+
+    $savePath = storage_path($fileName);
+
+    $template->saveAs($savePath);
+
+    return response()
+        ->download($savePath)
+        ->deleteFileAfterSend(true);
+}
 
     public function exportKuitansiST($subKelompokId)
 {

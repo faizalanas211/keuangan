@@ -302,13 +302,23 @@
 
 @if(Auth::user()->role==='pegawai')
 
-<li class="menu-header small text-uppercase">
+<!-- <li class="menu-header small text-uppercase">
 <span class="menu-header-text">📄 Gaji Saya</span>
-</li>
+</li> -->
 
 <li class="menu-item {{ Request::is('dashboard/slip-gaji*')?'active':'' }}">
 <a href="{{ route('slip-gaji.index') }}" class="menu-link">
 <i class="menu-icon bx bx-receipt"></i><div>Slip Gaji</div>
+</a>
+</li>
+
+<!-- <li class="menu-header small text-uppercase">
+<span class="menu-header-text">📄 Perjalanan Dinas</span>
+</li> -->
+
+<li class="menu-item {{ Request::is('dashboard/perjadin*')?'active':'' }}">
+<a href="{{ route('perjadin.index') }}" class="menu-link">
+<i class="menu-icon bx bx-receipt"></i><div>Perjalanan Dinas</div>
 </a>
 </li>
 
