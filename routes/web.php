@@ -112,6 +112,19 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
     Route::get('perjadin/{id}/export-nominatif',
         [PerjadinController::class, 'exportNominatif']
     )->name('perjadin.export.nominatif');
+    
+    // ========== TAMBAHAN ROUTE BARU: Export Nominatif per Sub Kelompok (per Surat Tugas) ==========
+    Route::get('perjadin/{perjalananId}/sub-kelompok/{subKelompokId}/export-nominatif',
+        [PerjadinController::class, 'exportNominatifPerSubKelompok']
+    )->name('perjadin.export.nominatif.subkelompok');
+    // ============================================================================================
+    
+    // ========== TAMBAHAN ROUTE BARU: Export SBY per Sub Kelompok (per Surat Tugas) ==========
+    Route::get('perjadin/{perjalananId}/sub-kelompok/{subKelompokId}/export-sby',
+        [PerjadinController::class, 'exportSbyPerSt']
+    )->name('perjadin.export.sby.perst');
+    // ========================================================================================
+    
     // Route::get('perjadin/{id}/export-sby-penyimpan/{pp}',
     //     [PerjadinController::class, 'exportSbyPenyimpan']
     // )->name('perjadin.export.sby');

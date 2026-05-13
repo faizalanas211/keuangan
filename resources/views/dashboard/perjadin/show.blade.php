@@ -337,7 +337,27 @@
                                         {{ $sub->tanggal_st ? \Carbon\Carbon::parse($sub->tanggal_st)->translatedFormat('d F Y') : '-' }}
                                     </small>
                                 </div>
-                                <div class="d-flex gap-2 align-items-center">
+                                <div class="d-flex gap-2 align-items-center flex-wrap">
+                                    {{-- ========== DROPDOWN EXPORT PER ST (NOMINATIF & SBY) ========== --}}
+                                    <div class="dropdown d-inline-block">
+                                        <button class="btn btn-sm btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-download me-1"></i> Export
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a class="dropdown-item" href="{{ route('perjadin.export.nominatif.subkelompok', [$perjalanan->id, $sub->id]) }}">
+                                                    <i class="fas fa-file-alt me-2 text-success"></i> Nominatif per ST
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="{{ route('perjadin.export.sby.perst', [$perjalanan->id, $sub->id]) }}">
+                                                    <i class="fas fa-file-excel me-2 text-primary"></i> SBY per ST
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    {{-- ================================================================= --}}
+                                    <div class="d-flex gap-2 align-items-center">
                                     <a href="{{ route('perjadin.export.kuitansi.st', $sub->id) }}" 
                                         class="btn btn-sm btn-outline-info">
                                         <i class="fas fa-envelope me-1"></i> Export Kuitansi ST
@@ -347,9 +367,10 @@
                                         <i class="fas fa-envelope me-1"></i> Export Amplop ST
                                     </a>
                                     <span class="badge bg-success fs-6 px-3 py-2">
-                                        <i class="fas fa-rupiah-sign me-1"></i>
-                                        {{ number_format($totalST, 0, ',', '.') }}
-                                    </span>
+                                            <i class="fas fa-rupiah-sign me-1"></i>
+                                            {{ number_format($totalST, 0, ',', '.') }}
+                                        </span>
+                                </div>
                                 </div>
                             </div>
 

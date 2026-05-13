@@ -29,6 +29,8 @@ use PhpOffice\PhpWord\TemplateProcessor;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use ZipArchive;
 use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpWord\Element\Section;
 use PhpOffice\PhpWord\Settings;
 use setasign\Fpdi\Fpdi;
@@ -537,6 +539,145 @@ public function edit($id)
         'Nominatif_'.$perjalanan->nama_kegiatan.'.xlsx'
     );
 }
+
+    /**
+     * =========================================================================
+     * EXPORT NOMINATIF PER SURAT TUGAS (BERDASARKAN NOMOR ST)
+     * - Menggabungkan semua peserta dari semua kelompok (Panitia/Peserta/Narasumber)
+     *   yang memiliki nomor ST yang sama
+     * - Menggunakan format yang SAMA PERSIS dengan export keseluruhan
+     * =========================================================================
+     */
+    public function exportNominatifPerSubKelompok($perjalananId, $subKelompokId)
+    {
+        $perjalanan = PerjalananDinas::with([
+            'pegawaiPerjalanan.pegawai',
+            'pegawaiPerjalanan.rincian.jenisBiaya',
+            'nonpegawai.rincian.jenisBiaya'
+        ])->findOrFail($perjalananId);
+        
+        $subKelompok = SubKelompokPerjalanan::findOrFail($subKelompokId);
+        $nomorST = $subKelompok->nomor_st;
+        
+        // Cari semua subKelompok dengan nomor ST yang SAMA
+        $subKelompokIds = SubKelompokPerjalanan::whereHas('kelompok', function($q) use ($perjalananId) {
+            $q->where('perjalanan_dinas_id', $perjalananId);
+        })->where('nomor_st', $nomorST)->pluck('id')->toArray();
+        
+        // Filter pegawai berdasarkan subkelompok_id
+        $filteredPegawai = $perjalanan->pegawaiPerjalanan->filter(function($pp) use ($subKelompokIds) {
+            return in_array($pp->subkelompok_id, $subKelompokIds);
+        });
+        
+        // Filter nonpegawai berdasarkan subkelompok_id
+        $filteredNonPegawai = $perjalanan->nonpegawai->filter(function($np) use ($subKelompokIds) {
+            return in_array($np->subkelompok_id, $subKelompokIds);
+        });
+        
+        // Set relasi yang sudah difilter
+        $perjalanan->setRelation('pegawaiPerjalanan', $filteredPegawai);
+        $perjalanan->setRelation('nonpegawai', $filteredNonPegawai);
+        
+        return Excel::download(
+            new NominatifPerjalananExport($perjalanan),
+            'Nominatif_ST_' . preg_replace('/[^a-zA-Z0-9]/', '_', $nomorST ?? 'no_st') . '.xlsx'
+        );
+    }
+
+    /**
+     * =========================================================================
+     * EXPORT SBY PER SURAT TUGAS (BERDASARKAN NOMOR ST)
+     * - Satu file SBY untuk satu ST
+     * - Total biaya = akumulasi semua peserta dalam ST tersebut
+     * - Nama penerima diisi peserta pertama (urutan teratas)
+     * =========================================================================
+     */
+    public function exportSbyPerSt($perjalananId, $subKelompokId)
+    {
+        $perjalanan = PerjalananDinas::with([
+            'pegawaiPerjalanan.pegawai',
+            'pegawaiPerjalanan.rincian.jenisBiaya',
+            'nonpegawai.rincian.jenisBiaya'
+        ])->findOrFail($perjalananId);
+        
+        $subKelompok = SubKelompokPerjalanan::findOrFail($subKelompokId);
+        $nomorST = $subKelompok->nomor_st;
+        
+        // Cari semua subKelompok dengan nomor ST yang SAMA
+        $subKelompokIds = SubKelompokPerjalanan::whereHas('kelompok', function($q) use ($perjalananId) {
+            $q->where('perjalanan_dinas_id', $perjalananId);
+        })->where('nomor_st', $nomorST)->pluck('id')->toArray();
+        
+        // Kumpulkan semua peserta dalam ST yang sama
+        $allPegawai = $perjalanan->pegawaiPerjalanan->filter(fn($pp) => in_array($pp->subkelompok_id, $subKelompokIds));
+        $allNonPegawai = $perjalanan->nonpegawai->filter(fn($np) => in_array($np->subkelompok_id, $subKelompokIds));
+        
+        // Hitung total akumulasi semua peserta
+        $totalST = 0;
+        foreach ($allPegawai as $pp) {
+            $totalST += $pp->rincian->sum('total');
+        }
+        foreach ($allNonPegawai as $np) {
+            $totalST += $np->rincian->sum('total');
+        }
+        
+        // Ambil peserta pertama (urutan teratas)
+        $pesertaPertama = null;
+        if ($allPegawai->isNotEmpty()) {
+            $pesertaPertama = $allPegawai->first();
+            $pesertaPertama->type = 'pegawai';
+        } elseif ($allNonPegawai->isNotEmpty()) {
+            $pesertaPertama = $allNonPegawai->first();
+            $pesertaPertama->type = 'nonpegawai';
+        }
+        
+        $tanggalMulai = Carbon::parse($perjalanan->tanggal_mulai);
+        $tanggalAkhir = Carbon::parse($perjalanan->tanggal_akhir);
+        $tanggalTerima = Carbon::parse($perjalanan->tanggal_terima);
+        
+        // Format tanggal dinas
+        if ($tanggalMulai->isSameDay($tanggalAkhir)) {
+            $tanggalDinas = $tanggalMulai->translatedFormat('d F Y');
+        } else {
+            $tanggalDinas = $tanggalMulai->translatedFormat('d F Y') . ' s/d ' . $tanggalAkhir->translatedFormat('d F Y');
+        }
+        
+        // Siapkan data penerima
+        $namaPenerima = '-';
+        $nipPenerima = '-';
+        $kepada = 'Peserta Perjalanan Dinas';
+        
+        if ($pesertaPertama) {
+            if ($pesertaPertama->type == 'pegawai') {
+                $namaPenerima = $pesertaPertama->pegawai->nama;
+                $nipPenerima = $pesertaPertama->pegawai->nip;
+                $kepada = 'Pegawai BBPJT';
+            } else {
+                $namaPenerima = $pesertaPertama->nama;
+                $nipPenerima = $pesertaPertama->nik ?? $pesertaPertama->instansi ?? '-';
+                $kepada = $pesertaPertama->instansi ?? 'Non Pegawai';
+            }
+        }
+        
+        $uraian = 'Belanja Perjalanan Dinas untuk melaksanakan kegiatan ' 
+                . $perjalanan->nama_kegiatan 
+                . ' pada ' . $tanggalDinas 
+                . ' bertempat di ' . $perjalanan->tujuan_kota;
+        
+        return Excel::download(
+            new SbyPenyimpanExport([
+                'tanggal' => $tanggalTerima,
+                'nomor' => '                  /BBPJT/' . $tanggalTerima->format('m') . '/' . $tanggalTerima->format('Y'),
+                'kepada' => $kepada,
+                'kepada_nama' => $namaPenerima,
+                'kepada_nip' => $nipPenerima,
+                'nominal_angka' => (float) $totalST,
+                'uraian' => $uraian,
+                'mak' => $perjalanan->kode_mak
+            ]),
+            'SBY_ST_' . preg_replace('/[^a-zA-Z0-9]/', '_', $nomorST ?? 'no_st') . '.xlsx'
+        );
+    }
 
     public function exportSbyPenyimpan($ppId)
     {
@@ -1536,6 +1677,8 @@ public function edit($id)
             return $this->terbilang($angka / 1000) . " Ribu" . $this->terbilang($angka % 1000);
         elseif ($angka < 1000000000)
             return $this->terbilang($angka / 1000000) . " Juta" . $this->terbilang($angka % 1000000);
+        
+        return "";
     }
 
     public function destroy($id)
