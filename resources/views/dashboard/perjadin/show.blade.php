@@ -147,6 +147,38 @@
         flex-wrap: wrap;
     }
     
+    /* ========== PERBAIKAN DROPDOWN AGAR TIDAK TERPOTONG & BISA SCROLL ========== */
+    .dropdown-menu {
+        max-height: 300px;
+        overflow-y: auto;
+        min-width: 180px;
+    }
+    
+    /* Untuk memastikan dropdown tidak terpotong oleh card */
+    .sub-kelompok-header {
+        overflow: visible !important;
+    }
+    
+    .sub-kelompok-card {
+        overflow: visible !important;
+    }
+    
+    .card-body {
+        overflow: visible !important;
+    }
+    
+    .card {
+        overflow: visible !important;
+    }
+    
+    /* Pastikan dropdown tetap di bawah (bukan dropup) */
+    .dropdown .dropdown-menu {
+        top: 100%;
+        bottom: auto;
+        transform: translateY(0);
+    }
+    /* =========================================================== */
+    
     @media (max-width: 768px) {
         .btn-export-group {
             justify-content: flex-start;
@@ -159,6 +191,11 @@
         
         .sub-kelompok-header .badge {
             align-self: flex-start;
+        }
+        
+        .dropdown-menu {
+            max-height: 250px;
+            min-width: 160px;
         }
     }
 </style>
@@ -338,12 +375,12 @@
                                     </small>
                                 </div>
                                 <div class="d-flex gap-2 align-items-center flex-wrap">
-                                    {{-- ========== DROPDOWN EXPORT PER ST (NOMINATIF & SBY) ========== --}}
+                                    {{-- ========== DROPDOWN EXPORT PER ST (TANPA DROPUP) ========== --}}
                                     <div class="dropdown d-inline-block">
-                                        <button class="btn btn-sm btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <button class="btn btn-sm btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                             <i class="fas fa-download me-1"></i> Export
                                         </button>
-                                        <ul class="dropdown-menu">
+                                        <ul class="dropdown-menu dropdown-menu-end">
                                             <li>
                                                 <a class="dropdown-item" href="{{ route('perjadin.export.nominatif.subkelompok', [$perjalanan->id, $sub->id]) }}">
                                                     <i class="fas fa-file-alt me-2 text-success"></i> Nominatif per ST
@@ -355,25 +392,22 @@
                                                 </a>
                                             </li>
                                             <li>
-                                                <a class="dropdown-item" href="{{ route('perjadin.export.kuitansi.st', $sub->id) }}">
-                                                    <i class="fas fa-file-excel me-2 text-primary"></i> Kuitansi per ST
+                                                <a class="dropdown-item" href="{{ route('perjadin.export.kuitansi.perst', [$perjalanan->id, $sub->id]) }}">
+                                                    <i class="fas fa-file-word me-2 text-primary"></i> Kuitansi per ST
                                                 </a>
                                             </li>
                                             <li>
-                                                <a class="dropdown-item" href="{{ route('perjadin.export.amplop.st', $sub->id) }}">
-                                                    <i class="fas fa-file-excel me-2 text-primary"></i> Amplop per ST
+                                                <a class="dropdown-item" href="{{ route('perjadin.export.amplop.perst', [$perjalanan->id, $sub->id]) }}">
+                                                    <i class="fas fa-envelope me-2 text-primary"></i> Amplop per ST
                                                 </a>
                                             </li>
                                         </ul>
                                     </div>
-                                    {{-- ================================================================= --}}
-                                    <div class="d-flex gap-2 align-items-center">
-                                    
+                                    {{-- ========================================================= --}}
                                     <span class="badge bg-success fs-6 px-3 py-2">
-                                            <i class="fas fa-rupiah-sign me-1"></i>
-                                            {{ number_format($totalST, 0, ',', '.') }}
-                                        </span>
-                                </div>
+                                        <i class="fas fa-rupiah-sign me-1"></i>
+                                        {{ number_format($totalST, 0, ',', '.') }}
+                                    </span>
                                 </div>
                             </div>
 

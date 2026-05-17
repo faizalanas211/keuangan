@@ -43,7 +43,7 @@ class PegawaiController extends Controller
             'jabatan' => 'required|string|max:255',
             'pangkat_golongan' => 'required|string|max:255',
             'role' => 'required|in:pegawai,admin',
-            'foto' => 'required|image|mimes:jpg,jpeg,png|max:10240',
+            'foto' => 'nullable|image|mimes:jpg,jpeg,png|max:10240', // diubah dari required jadi nullable
         ]);
 
         $fotoPath = null;
@@ -73,7 +73,7 @@ class PegawaiController extends Controller
             'email' => $pegawai->nip . '@pegawai.local',
             'nip' => $pegawai->nip,
             'pegawai_id' => $pegawai->id,
-            'role' => $request->role, // <-- sesuai pilihan admin / pegawai
+            'role' => $request->role,
             'password' => Hash::make($pegawai->nip),
         ]);
 
@@ -99,6 +99,7 @@ class PegawaiController extends Controller
             'tanggal_lahir'    => 'nullable|date',
             'jabatan'          => 'required|string|max:255',
             'pangkat_golongan' => 'nullable|string|max:255',
+            'role'             => 'required|in:pegawai,admin', // TAMBAHAN validasi role
             'foto'             => 'nullable|image|mimes:jpg,jpeg,png|max:10240',
         ]);
 
@@ -114,7 +115,31 @@ class PegawaiController extends Controller
             $validated['foto'] = $path;
         }
 
+        // Update pegawai
         $pegawai->update($validated);
+
+        // ========== SINCRONISASI ROLE KE TABEL USERS ==========
+        $user = User::where('pegawai_id', $pegawai->id)->first();
+        
+        if ($user) {
+            // User sudah ada -> update
+            $user->update([
+                'name' => $request->nama,
+                'nip' => $request->nip,
+                'role' => $request->role,
+            ]);
+        } else {
+            // User belum ada -> buat baru (fallback untuk data lama)
+            User::create([
+                'name' => $request->nama,
+                'email' => $request->nip . '@pegawai.local',
+                'nip' => $request->nip,
+                'pegawai_id' => $pegawai->id,
+                'role' => $request->role,
+                'password' => Hash::make($request->nip),
+            ]);
+        }
+        // =====================================================
 
         $page = $request->input('page', 1);
 

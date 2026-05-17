@@ -158,7 +158,7 @@ public function store(Request $request)
                                 'satuan' => $r['satuan'] ?? '-',
                                 'tarif'  => $r['tarif'] ?? 0,
                                 'total'  => ($r['volume'] ?? 0) * ($r['tarif'] ?? 0),
-                                'masuk_amplop' => isset($r['masuk_amplop']) ? 1 : 0, // TAMBAHKAN INI
+                                'masuk_amplop' => isset($r['masuk_amplop']) ? 1 : 0,
                             ]);
                         }
 
@@ -187,7 +187,7 @@ public function store(Request $request)
                                 'satuan' => $r['satuan'] ?? '-',
                                 'tarif'  => $r['tarif'] ?? 0,
                                 'total'  => ($r['volume'] ?? 0) * ($r['tarif'] ?? 0),
-                                'masuk_amplop' => isset($r['masuk_amplop']) ? 1 : 0, // TAMBAHKAN INI
+                                'masuk_amplop' => isset($r['masuk_amplop']) ? 1 : 0,
                             ]);
                         }
                     }
@@ -214,6 +214,11 @@ public function show($id)
         'kelompokPerjalanan.subKelompok.pegawai.rincian.jenisBiaya',
         'kelompokPerjalanan.subKelompok.nonpegawai.rincian.jenisBiaya',
     ])->findOrFail($id);
+
+    // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
+    if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+        abort(403, 'Anda tidak memiliki akses untuk melihat data ini.');
+    }
 
     $grandTotalPerjalanan = 0;
 
@@ -247,6 +252,11 @@ public function edit($id)
         'kelompokPerjalanan.subKelompok.nonpegawai.rincian.jenisBiaya'
 
     ])->findOrFail($id);
+
+    // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
+    if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+        abort(403, 'Anda tidak memiliki akses untuk mengedit data ini.');
+    }
 
     $pegawai = Pegawai::all();
     $jenisBiaya = JenisBiaya::all();
@@ -387,6 +397,11 @@ public function edit($id)
 
         $perjalanan = PerjalananDinas::findOrFail($id);
 
+        // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
+        if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+            abort(403, 'Anda tidak memiliki akses untuk mengupdate data ini.');
+        }
+
         // ===============================
         // UPDATE PERJALANAN
         // ===============================
@@ -487,7 +502,7 @@ public function edit($id)
                                 'satuan' => $r['satuan'] ?? '-',
                                 'tarif'  => $tarif,
                                 'total'  => $volume * $tarif,
-                                'masuk_amplop' => isset($r['masuk_amplop']) ? 1 : 0, // TAMBAHKAN INI
+                                'masuk_amplop' => isset($r['masuk_amplop']) ? 1 : 0,
                             ]);
                         }
                     }
@@ -522,7 +537,7 @@ public function edit($id)
                                 'satuan' => $r['satuan'] ?? '-',
                                 'tarif'  => $tarif,
                                 'total'  => $volume * $tarif,
-                                'masuk_amplop' => isset($r['masuk_amplop']) ? 1 : 0, // TAMBAHKAN INI
+                                'masuk_amplop' => isset($r['masuk_amplop']) ? 1 : 0,
                             ]);
                         }
                     }
@@ -549,6 +564,11 @@ public function edit($id)
         'kelompokPerjalanan.nonpegawai.rincian.jenisBiaya'
     ])->findOrFail($id);
 
+    // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
+    if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+        abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
+    }
+
     return Excel::download(
         new NominatifPerjalananExport($perjalanan),
         'Nominatif_'.$perjalanan->nama_kegiatan.'.xlsx'
@@ -558,9 +578,6 @@ public function edit($id)
     /**
      * =========================================================================
      * EXPORT NOMINATIF PER SURAT TUGAS (BERDASARKAN NOMOR ST)
-     * - Menggabungkan semua peserta dari semua kelompok (Panitia/Peserta/Narasumber)
-     *   yang memiliki nomor ST yang sama
-     * - Menggunakan format yang SAMA PERSIS dengan export keseluruhan
      * =========================================================================
      */
     public function exportNominatifPerSubKelompok($perjalananId, $subKelompokId)
@@ -570,6 +587,11 @@ public function edit($id)
             'pegawaiPerjalanan.rincian.jenisBiaya',
             'nonpegawai.rincian.jenisBiaya'
         ])->findOrFail($perjalananId);
+        
+        // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
+        if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+            abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
+        }
         
         $subKelompok = SubKelompokPerjalanan::findOrFail($subKelompokId);
         $nomorST = $subKelompok->nomor_st;
@@ -602,9 +624,6 @@ public function edit($id)
     /**
      * =========================================================================
      * EXPORT SBY PER SURAT TUGAS (BERDASARKAN NOMOR ST)
-     * - Satu file SBY untuk satu ST
-     * - Total biaya = akumulasi semua peserta dalam ST tersebut
-     * - Nama penerima diisi peserta pertama (urutan teratas)
      * =========================================================================
      */
     public function exportSbyPerSt($perjalananId, $subKelompokId)
@@ -614,6 +633,11 @@ public function edit($id)
             'pegawaiPerjalanan.rincian.jenisBiaya',
             'nonpegawai.rincian.jenisBiaya'
         ])->findOrFail($perjalananId);
+        
+        // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
+        if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+            abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
+        }
         
         $subKelompok = SubKelompokPerjalanan::findOrFail($subKelompokId);
         $nomorST = $subKelompok->nomor_st;
@@ -694,12 +718,318 @@ public function edit($id)
         );
     }
 
+    /**
+     * =========================================================================
+     * EXPORT KUITANSI PER SURAT TUGAS (BERDASARKAN NOMOR ST)
+     * =========================================================================
+     */
+    public function exportKuitansiPerSt($perjalananId, $subKelompokId)
+    {
+        $perjalanan = PerjalananDinas::findOrFail($perjalananId);
+        
+        // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
+        if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+            abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
+        }
+        
+        $subKelompokAsal = SubKelompokPerjalanan::findOrFail($subKelompokId);
+        $nomorST = $subKelompokAsal->nomor_st;
+        
+        // Cari semua subKelompok dengan nomor ST yang SAMA
+        $subKelompokIds = SubKelompokPerjalanan::whereHas('kelompok', function($q) use ($perjalananId) {
+            $q->where('perjalanan_dinas_id', $perjalananId);
+        })->where('nomor_st', $nomorST)->pluck('id')->toArray();
+        
+        // Kumpulkan semua peserta dari semua subKelompok dengan ST yang sama
+        $allPegawai = PerjalananDinasPegawai::with([
+            'pegawai',
+            'perjalananDinas',
+            'rincian.jenisBiaya',
+            'subKelompok'
+        ])->whereIn('subkelompok_id', $subKelompokIds)->get();
+        
+        $allNonPegawai = NonPegawai::with([
+            'perjalananDinas',
+            'rincian.jenisBiaya',
+            'subKelompok'
+        ])->whereIn('subkelompok_id', $subKelompokIds)->get();
+        
+        // Gabungkan semua peserta
+        $pesertaList = collect();
+        
+        foreach ($allPegawai as $pp) {
+            $pesertaList->push([
+                'tipe' => 'pegawai',
+                'nama' => $pp->pegawai->nama,
+                'nip' => $pp->pegawai->nip,
+                'jabatan' => $pp->pegawai->jabatan,
+                'pangkat_golongan' => $pp->pegawai->pangkat_golongan,
+                'perjalanan' => $pp->perjalananDinas,
+                'rincian' => $pp->rincian,
+                'subKelompok' => $pp->subKelompok,
+            ]);
+        }
+        
+        foreach ($allNonPegawai as $np) {
+            $pesertaList->push([
+                'tipe' => 'nonpegawai',
+                'nama' => $np->nama,
+                'nip' => $np->nik ?? '-',
+                'jabatan' => $np->instansi ?? '-',
+                'pangkat_golongan' => '-',
+                'perjalanan' => $np->perjalananDinas,
+                'rincian' => $np->rincian,
+                'subKelompok' => $np->subKelompok,
+            ]);
+        }
+        
+        if ($pesertaList->isEmpty()) {
+            return back()->with('error', 'Tidak ada peserta dalam ST ini');
+        }
+        
+        // Load template
+        $templateFile = Template::where('jenis', 'kuitansi_spd')->latest()->first();
+        $template = new TemplateProcessor(storage_path('app/public/' . $templateFile->file_path));
+        
+        // Clone block untuk setiap peserta
+        $template->cloneBlock('block_kuitansi', $pesertaList->count(), true, true);
+        
+        foreach ($pesertaList->values() as $pIndex => $item) {
+            $index = $pIndex + 1;
+            
+            $perjalananPeserta = $item['perjalanan'];
+            $rincian = $item['rincian'];
+            $subKelompok = $item['subKelompok'];
+            
+            $tanggal = $perjalananPeserta->tanggal_mulai;
+            $tanggalMulai = Carbon::parse($perjalananPeserta->tanggal_mulai);
+            $tanggalAkhir = Carbon::parse($perjalananPeserta->tanggal_akhir);
+            $lamaPerjalanan = $tanggalMulai->diffInDays($tanggalAkhir) + 1;
+            
+            $bendahara = PejabatPeriode::getByTanggal('Bendahara Pengeluaran', $tanggal);
+            $ppk = PejabatPeriode::getByTanggal('Pejabat Pembuat Komitmen', $tanggal);
+            
+            $sumTotal = $rincian->sum('total');
+            
+            $data = [
+                'tahun_anggaran' => $this->safeValue($perjalananPeserta->tahun_anggaran ?? date('Y')),
+                'beban_mak' => $this->safeValue($perjalananPeserta->kode_mak ?? '-'),
+                'jumlah_rupiah' => 'Rp' . number_format($sumTotal, 0, ',', '.'),
+                'terbilang' => $this->safeValue($this->terbilang($sumTotal)),
+                'keperluan' => $this->safeValue($perjalananPeserta->nama_kegiatan ?? '-'),
+                'nomor_spd' => $this->safeValue($subKelompok->nomor_st ?? '-'),
+                'tanggal_spd' => $subKelompok->tanggal_st ? Carbon::parse($subKelompok->tanggal_st)->translatedFormat('d F Y') : '-',
+                'tujuan' => $this->safeValue($perjalananPeserta->tujuan_kota ?? '-'),
+                'nama_kegiatan' => $this->safeValue($perjalananPeserta->nama_kegiatan ?? '-'),
+                'alat_angkutan' => $this->safeValue($perjalananPeserta->alat_angkutan ?? '-'),
+                'dari_kota' => $this->safeValue($perjalananPeserta->dari_kota ?? '-'),
+                'tujuan_kota' => $this->safeValue($perjalananPeserta->tujuan_kota ?? '-'),
+                'tingkat_perjalanan' => $this->safeValue($perjalananPeserta->tingkat_perjalanan ?? '-'),
+                'tanggal_mulai' => $tanggalMulai->translatedFormat('d F Y'),
+                'tanggal_akhir' => $tanggalAkhir->translatedFormat('d F Y'),
+                'lama_perjalanan' => $lamaPerjalanan . ' hari',
+                'tanggal_terima' => $perjalananPeserta->tanggal_terima ? Carbon::parse($perjalananPeserta->tanggal_terima)->translatedFormat('d F Y') : '-',
+                'nama_penerima' => $this->safeValue($item['nama']),
+                'nip_penerima' => $this->safeValue($item['nip']),
+                'pangkat_golongan_penerima' => $this->safeValue($item['pangkat_golongan']),
+                'jabatan_penerima' => $this->safeValue($item['jabatan']),
+                'nama_bendahara' => $this->safeValue($bendahara?->pegawai?->nama ?? '-'),
+                'nip_bendahara' => $this->safeValue($bendahara?->pegawai?->nip ?? '-'),
+                'nama_ppk' => $this->safeValue($ppk?->pegawai?->nama ?? '-'),
+                'nip_ppk' => $this->safeValue($ppk?->pegawai?->nip ?? '-'),
+                'sum_total' => number_format($sumTotal, 0, ',', '.'),
+            ];
+            
+            foreach ($data as $key => $value) {
+                $template->setValue("{$key}#{$index}", $value ?? '-');
+            }
+            
+            // Rincian dinamis
+            if ($rincian->isEmpty()) {
+                $template->setValue("no#{$index}", '-');
+                $template->setValue("uraian#{$index}", '-');
+                $template->setValue("jumlah#{$index}", '-');
+                $template->setValue("keterangan#{$index}", '-');
+            } else {
+                $template->cloneRow("no#{$index}", $rincian->count());
+                foreach ($rincian->values() as $rIndex => $r) {
+                    $row = $rIndex + 1;
+                    $jenis = $this->safeValue($r->jenisBiaya->nama_biaya);
+                    $detail = $this->safeValue($r->uraian);
+                    $uraian = $jenis;
+                    if (!empty($r->uraian)) {
+                        $uraian .= " ({$detail})";
+                    }
+                    if ($r->volume && $r->tarif) {
+                        $uraian .= " : " . (int) $r->volume . " " . $this->safeValue($r->satuan) . " x Rp" . number_format($r->tarif, 0, ',', '.');
+                    }
+                    $template->setValue("no#{$index}#{$row}", $row);
+                    $template->setValue("uraian#{$index}#{$row}", $uraian);
+                    $template->setValue("jumlah#{$index}#{$row}", 'Rp' . number_format($r->total, 0, ',', '.'));
+                    $template->setValue("keterangan#{$index}#{$row}", '-');
+                }
+            }
+            
+            // Rincian riil
+            $rincianRiil = $rincian->filter(function($r) {
+                $nama = strtolower($r->jenisBiaya->nama_biaya ?? '');
+                return str_contains($nama, 'taksi') || str_contains($nama, 'transport');
+            })->values();
+            
+            if ($rincianRiil->isEmpty()) {
+                $template->setValue("no_riil#{$index}", '-');
+                $template->setValue("uraian_riil#{$index}", '-');
+                $template->setValue("jumlah_riil#{$index}", '-');
+            } else {
+                $template->cloneRow("no_riil#{$index}", $rincianRiil->count());
+                foreach ($rincianRiil as $riilIndex => $r) {
+                    $row = $riilIndex + 1;
+                    $uraian = $r->uraian ? $this->safeValue($r->jenisBiaya->nama_biaya) . ' (' . $this->safeValue($r->uraian) . ')' : $this->safeValue($r->jenisBiaya->nama_biaya);
+                    $template->setValue("no_riil#{$index}#{$row}", $row);
+                    $template->setValue("uraian_riil#{$index}#{$row}", $uraian);
+                    $template->setValue("jumlah_riil#{$index}#{$row}", 'Rp' . number_format($r->total, 0, ',', '.'));
+                }
+            }
+            
+            $template->setValue("sum_total_riil#{$index}", number_format($rincianRiil->sum('total'), 0, ',', '.'));
+        }
+        
+        $fileName = 'Kuitansi_ST_' . preg_replace('/[^a-zA-Z0-9]/', '_', $nomorST ?? 'no_st') . '.docx';
+        $savePath = storage_path($fileName);
+        $template->saveAs($savePath);
+        
+        return response()->download($savePath)->deleteFileAfterSend(true);
+    }
+
+    /**
+     * =========================================================================
+     * EXPORT AMPLOP PER SURAT TUGAS (BERDASARKAN NOMOR ST)
+     * =========================================================================
+     */
+    public function exportAmplopPerSt($perjalananId, $subKelompokId)
+    {
+        $perjalanan = PerjalananDinas::findOrFail($perjalananId);
+        
+        // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
+        if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+            abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
+        }
+        
+        $subKelompokAsal = SubKelompokPerjalanan::findOrFail($subKelompokId);
+        $nomorST = $subKelompokAsal->nomor_st;
+        
+        // Cari semua subKelompok dengan nomor ST yang SAMA
+        $subKelompokIds = SubKelompokPerjalanan::whereHas('kelompok', function($q) use ($perjalananId) {
+            $q->where('perjalanan_dinas_id', $perjalananId);
+        })->where('nomor_st', $nomorST)->pluck('id')->toArray();
+        
+        // Kumpulkan semua peserta (hanya yang masuk amplop)
+        $allPegawai = PerjalananDinasPegawai::with([
+            'pegawai',
+            'perjalananDinas',
+            'rincian' => function($q) {
+                $q->where('masuk_amplop', true);
+            },
+            'rincian.jenisBiaya'
+        ])->whereIn('subkelompok_id', $subKelompokIds)->get();
+        
+        $allNonPegawai = NonPegawai::with([
+            'perjalananDinas',
+            'rincian' => function($q) {
+                $q->where('masuk_amplop', true);
+            },
+            'rincian.jenisBiaya'
+        ])->whereIn('subkelompok_id', $subKelompokIds)->get();
+        
+        // Gabungkan semua peserta (filter yang memiliki rincian amplop)
+        $pesertaList = collect();
+        
+        foreach ($allPegawai as $pp) {
+            if ($pp->rincian->isNotEmpty()) {
+                $pesertaList->push([
+                    'nama' => $pp->pegawai->nama,
+                    'perjalanan' => $pp->perjalananDinas,
+                    'rincian' => $pp->rincian,
+                ]);
+            }
+        }
+        
+        foreach ($allNonPegawai as $np) {
+            if ($np->rincian->isNotEmpty()) {
+                $pesertaList->push([
+                    'nama' => $np->nama,
+                    'perjalanan' => $np->perjalananDinas,
+                    'rincian' => $np->rincian,
+                ]);
+            }
+        }
+        
+        if ($pesertaList->isEmpty()) {
+            return back()->with('error', 'Tidak ada peserta dengan biaya amplop dalam ST ini');
+        }
+        
+        // Load template
+        $templateFile = Template::where('jenis', 'amplop')->latest()->first();
+        $template = new TemplateProcessor(storage_path('app/public/' . $templateFile->file_path));
+        
+        // Clone block untuk setiap peserta
+        $template->cloneBlock('block_amplop', $pesertaList->count(), true, true);
+        
+        foreach ($pesertaList->values() as $pIndex => $item) {
+            $index = $pIndex + 1;
+            $perjalananPeserta = $item['perjalanan'];
+            $rincian = $item['rincian'];
+            $sumTotal = $rincian->sum('total');
+            
+            $template->setValue("nama#{$index}", $this->safeValue($item['nama']));
+            $template->setValue("nama_kegiatan#{$index}", $this->safeValue($perjalananPeserta->nama_kegiatan));
+            $template->setValue("jumlah_rupiah#{$index}", 'Rp' . number_format($sumTotal, 0, ',', '.'));
+            $template->setValue("sum_total#{$index}", number_format($sumTotal, 0, ',', '.'));
+            $template->setValue("terbilang#{$index}", $this->safeValue($this->terbilang($sumTotal)));
+            
+            // Rincian
+            if ($rincian->isEmpty()) {
+                $template->setValue("no#{$index}", '-');
+                $template->setValue("uraian#{$index}", '-');
+                $template->setValue("jumlah#{$index}", '-');
+            } else {
+                $template->cloneRow("no#{$index}", $rincian->count());
+                foreach ($rincian->values() as $rIndex => $r) {
+                    $row = $rIndex + 1;
+                    $jenis = $this->safeValue($r->jenisBiaya->nama_biaya);
+                    $detail = $this->safeValue($r->uraian);
+                    $uraian = $jenis;
+                    if (!empty($r->uraian)) {
+                        $uraian .= " ({$detail})";
+                    }
+                    if ($r->volume && $r->tarif) {
+                        $uraian .= " : " . (int) $r->volume . " " . $this->safeValue($r->satuan) . " x Rp" . number_format($r->tarif, 0, ',', '.');
+                    }
+                    $template->setValue("no#{$index}#{$row}", $row);
+                    $template->setValue("uraian#{$index}#{$row}", $uraian);
+                    $template->setValue("jumlah#{$index}#{$row}", 'Rp' . number_format($r->total, 0, ',', '.'));
+                }
+            }
+        }
+        
+        $fileName = 'Amplop_ST_' . preg_replace('/[^a-zA-Z0-9]/', '_', $nomorST ?? 'no_st') . '.docx';
+        $savePath = storage_path($fileName);
+        $template->saveAs($savePath);
+        
+        return response()->download($savePath)->deleteFileAfterSend(true);
+    }
+
     public function exportSbyPenyimpan($ppId)
     {
         $pp = PerjalananDinasPegawai::with(['pegawai', 'perjalananDinas.surat', 'rincian'])
             ->findOrFail($ppId);
 
         $perjalanan = $pp->perjalananDinas;
+        
+        // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
+        if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+            abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
+        }
 
         $tanggalMulai = Carbon::parse($perjalanan->tanggal_mulai);
         $tanggalAkhir = Carbon::parse($perjalanan->tanggal_akhir);
@@ -746,6 +1076,11 @@ public function edit($id)
             ->findOrFail($npId);
 
         $perjalanan = $np->perjalananDinas;
+        
+        // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
+        if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+            abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
+        }
 
         $namaKelompok = $np->subKelompok->kelompok->nama_kelompok;
 
@@ -794,6 +1129,11 @@ public function edit($id)
             ->findOrFail($npId);
 
         $perjalanan = $np->perjalananDinas;
+        
+        // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
+        if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+            abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
+        }
 
         $tanggal_mulai = Carbon::parse($perjalanan->tanggal_mulai);
         $tanggal_akhir = Carbon::parse($perjalanan->tanggal_akhir);
@@ -817,7 +1157,7 @@ public function edit($id)
                 'tanggal' => $tanggal,
                 'nomor' => '                  /BBPJT/'.$tanggal->format('m').'/'.$tanggal->format('Y'),
 
-                'kepada' => $np->instansi ?? $np->nama, // kalau instansi kosong fallback ke nama
+                'kepada' => $np->instansi ?? $np->nama,
                 'kepada_nama' => $np->nama,
                 'kepada_nip' => $np->nik ?? '-',
 
@@ -850,6 +1190,11 @@ public function edit($id)
 
     $perjalanan = $pp->perjalananDinas;
     $pegawai    = $pp->pegawai;
+    
+    // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
+    if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+        abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
+    }
 
     $tanggal = $perjalanan->tanggal_mulai;
 
@@ -1291,6 +1636,11 @@ public function edit($id)
     ])->findOrFail($npId);
 
     $perjalanan = $np->perjalananDinas;
+    
+    // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
+    if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+        abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
+    }
 
     $tanggal = $perjalanan->tanggal_mulai;
 
@@ -1730,6 +2080,12 @@ public function edit($id)
         'nonPegawai.rincian.jenisBiaya',
 
     ])->findOrFail($subKelompokId);
+
+    // CEK AKSES: Ambil perjalanan dari subKelompok
+    $perjalanan = $subKelompok->pegawai->first()?->perjalananDinas ?? $subKelompok->nonPegawai->first()?->perjalananDinas;
+    if ($perjalanan && Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+        abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
+    }
 
     // ===============================
     // GABUNG PESERTA
@@ -2196,6 +2552,11 @@ public function edit($id)
         try {
             $perjalanan = PerjalananDinas::findOrFail($id);
 
+            // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
+            if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+                abort(403, 'Anda tidak memiliki akses untuk menghapus data ini.');
+            }
+
             // ===============================
             // HAPUS RINCIAN PEGAWAI
             // ===============================
@@ -2327,6 +2688,11 @@ public function exportAllSbyZip($perjadinId)
         'pegawaiPerjalanan.rincian',
         'nonpegawai.rincian'
     ])->findOrFail($perjadinId);
+    
+    // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
+    if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+        abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
+    }
 
     $zip = new ZipArchive();
     $zipName = 'SBY-'.$perjadinId.'.zip';
@@ -2723,6 +3089,11 @@ public function exportAllKuitansiZip($perjadinId)
         'nonpegawai.rincian.jenisBiaya',
         'nonpegawai.subKelompok',
     ])->findOrFail($perjadinId);
+    
+    // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
+    if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+        abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
+    }
 
     $zip = new \ZipArchive();
     $zipName = 'Kuitansi-'.$perjadinId.'.zip';
@@ -2770,6 +3141,11 @@ public function exportAmplop($id)
 
     $perjalanan = $pp->perjalananDinas;
     $pegawai    = $pp->pegawai;
+    
+    // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
+    if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+        abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
+    }
 
     // HANYA YANG MASUK AMPLOP
     $rincian = $pp->rincian;
@@ -2931,6 +3307,11 @@ public function exportAmplopNonPegawai($npId)
     ])->findOrFail($npId);
 
     $perjalanan = $np->perjalananDinas;
+    
+    // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
+    if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+        abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
+    }
 
     // HANYA YANG MASUK AMPLOP
     $rincian = $np->rincian;
@@ -3102,6 +3483,12 @@ public function exportAmplopST($subKelompokId)
         'nonPegawai.rincian.jenisBiaya',
 
     ])->findOrFail($subKelompokId);
+
+    // CEK AKSES: Ambil perjalanan dari subKelompok
+    $perjalanan = $subKelompok->pegawai->first()?->perjalananDinas ?? $subKelompok->nonPegawai->first()?->perjalananDinas;
+    if ($perjalanan && Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
+        abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
+    }
 
     // ===============================
     // GABUNG SEMUA PESERTA

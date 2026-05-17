@@ -33,8 +33,13 @@ use Maatwebsite\Excel\Excel;
 |--------------------------------------------------------------------------
 */
 Route::middleware('guest')->group(function () {
+    // Route login default (untuk admin)
     Route::get('/', [AuthController::class, 'login'])->name('login');
     Route::post('/login', [AuthController::class, 'loginAction'])->name('loginAction');
+
+    // ========== TAMBAHAN ROUTE BARU: Login Pegawai ==========
+    Route::get('/login/pegawai', [AuthController::class, 'showLoginPegawai'])->name('login.pegawai');
+    // ========================================================
 
     Route::get('/register', [AuthController::class, 'register'])->name('register');
     Route::post('/register', [AuthController::class, 'registerAction'])->name('registerAction');
@@ -124,6 +129,18 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
         [PerjadinController::class, 'exportSbyPerSt']
     )->name('perjadin.export.sby.perst');
     // ========================================================================================
+
+    // ========== TAMBAHAN ROUTE BARU: Export Kuitansi per ST (per Surat Tugas) ==========
+    Route::get('perjadin/{perjalananId}/sub-kelompok/{subKelompokId}/export-kuitansi',
+        [PerjadinController::class, 'exportKuitansiPerSt']
+    )->name('perjadin.export.kuitansi.perst');
+    // ==================================================================================
+
+    // ========== TAMBAHAN ROUTE BARU: Export Amplop per ST (per Surat Tugas) ==========
+    Route::get('perjadin/{perjalananId}/sub-kelompok/{subKelompokId}/export-amplop',
+        [PerjadinController::class, 'exportAmplopPerSt']
+    )->name('perjadin.export.amplop.perst');
+    // ================================================================================
     
     // Route::get('perjadin/{id}/export-sby-penyimpan/{pp}',
     //     [PerjadinController::class, 'exportSbyPenyimpan']
@@ -144,10 +161,13 @@ Route::middleware('auth')->prefix('dashboard')->group(function () {
         ->name('perjadin.export.amplop');
     Route::get('perjadin/export/amplop-non-pegawai/{np}', [PerjadinController::class, 'exportAmplopNonPegawai'])
         ->name('perjadin.export.amplopNonPegawai');
-    Route::get('/perjadin/export-amplop-st/{subKelompokId}', [PerjadinController::class, 'exportAmplopST'])
-        ->name('perjadin.export.amplop.st');
-    Route::get('/perjadin/export-kuitansi-st/{subKelompokId}', [PerjadinController::class, 'exportKuitansiST'])
-        ->name('perjadin.export.kuitansi.st');
+    
+    // ===== ROUTE LAMA (masih dipertahankan untuk kompatibilitas, tapi disarankan pakai yang baru) =====
+    // Route::get('/perjadin/export-amplop-st/{subKelompokId}', [PerjadinController::class, 'exportAmplopST'])
+    //     ->name('perjadin.export.amplop.st');
+    // Route::get('/perjadin/export-kuitansi-st/{subKelompokId}', [PerjadinController::class, 'exportKuitansiST'])
+    //     ->name('perjadin.export.kuitansi.st');
+    // ====================================================================================================
 
     // Pengaturan Template
     Route::resource('template', TemplateController::class);

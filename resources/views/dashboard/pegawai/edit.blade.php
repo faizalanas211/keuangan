@@ -100,9 +100,12 @@ value="{{ old('pangkat_golongan', $pegawai->pangkat_golongan) }}">
 <label class="col-sm-2 col-form-label">Role</label>
 <div class="col-sm-10">
 <select name="role" class="form-select">
-<option value="pegawai" {{ $pegawai->user->role=='pegawai'?'selected':'' }}>Pegawai</option>
-<option value="admin" {{ $pegawai->user->role=='admin'?'selected':'' }}>Admin</option>
+    <option value="pegawai" {{ ($pegawai->user && $pegawai->user->role == 'pegawai') ? 'selected' : (old('role', $pegawai->role) == 'pegawai' ? 'selected' : '') }}>Pegawai</option>
+    <option value="admin" {{ ($pegawai->user && $pegawai->user->role == 'admin') ? 'selected' : (old('role', $pegawai->role) == 'admin' ? 'selected' : '') }}>Admin</option>
 </select>
+@if(!$pegawai->user)
+    <small class="text-warning">⚠️ Pegawai belum memiliki akun user. Role akan disimpan ke tabel pegawai.</small>
+@endif
 </div>
 </div>
 

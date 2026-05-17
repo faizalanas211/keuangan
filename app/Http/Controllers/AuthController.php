@@ -18,6 +18,17 @@ class AuthController extends Controller
         return view('auth.login', compact('title'));
     }
 
+    /**
+     * =========================================================================
+     * TAMBAHAN METHOD BARU: Halaman Login Pegawai (desain berbeda)
+     * =========================================================================
+     */
+    public function showLoginPegawai()
+    {
+        $title = 'Login Pegawai';
+        return view('auth.login-pegawai', compact('title'));
+    }
+
     public function loginAction(Request $request)
     {
         $request->validate([
@@ -33,21 +44,16 @@ class AuthController extends Controller
             $loginType => $request->input('login'),
             'password' => $request->input('password'),
         ];
-        // dd($credentials);
+
         try {
-            //code...
             if (!Auth::attempt($credentials)) {
                 return back()->with('error', 'Invalid email, NIP, or password');
             }
 
             return redirect()->route('dashboard');
         } catch (\Throwable $th) {
-            return response()->json([
-                'message' => $th->getMessage()
-            ]);
+            return back()->with('error', $th->getMessage());
         }
-
-        // Coba login
     }
 
     public function register()
@@ -92,7 +98,14 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        $role = Auth::user()->role;
         Auth::logout();
-        return redirect()->route('login');
+        
+        // Redirect berdasarkan role
+        if ($role === 'admin') {
+            return redirect()->route('login');
+        } else {
+            return redirect()->route('login.pegawai');
+        }
     }
 }
