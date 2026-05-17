@@ -529,7 +529,7 @@
     <div class="elegant-card">
         <div class="row g-0">
             
-            <!-- LEFT PANEL - ELEGANT -->
+            <!-- LEFT PANEL - ELEGANT (ADMIN) -->
             <div class="col-lg-6">
                 <div class="elegant-left">
                     
@@ -538,21 +538,41 @@
                             <i class="bx bx-wallet"></i>
                         </div>
                         <h1 class="brand-name">
-                            Sistem Distribusi<br>
-                            Slip Gaji</h1>
+                            SIPADI
+                        </h1>
                         <p class="brand-tagline">
-                            Aplikasi yang membantu pegawai melihat dan mencetak slip gaji secara mandiri dan lebih privat.
+                            Sistem Informasi Penghasilan dan Perjalanan Dinas
                         </p>
                     </div>
                     
                     <div class="feature-grid">
                         <div class="feature-item">
                             <div class="feature-icon">
-                                <i class="bx bx-user-check"></i>
+                                <i class="bx bx-group"></i>
                             </div>
                             <div class="feature-content">
-                                <h5>Akses Mandiri</h5>
-                                <p>Pegawai dapat login menggunakan akun masing-masing.</p>
+                                <h5>Kelola Data Pegawai</h5>
+                                <p>Tambah, edit, dan kelola seluruh data pegawai dengan mudah.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-item">
+                            <div class="feature-icon">
+                                <i class="bx bx-plus-circle"></i>
+                            </div>
+                            <div class="feature-content">
+                                <h5>Atur Penghasilan & Potongan</h5>
+                                <p>Input dan kelola komponen gaji serta potongan untuk setiap pegawai.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-item">
+                            <div class="feature-icon">
+                                <i class="bx bx-car"></i>
+                            </div>
+                            <div class="feature-content">
+                                <h5>Verifikasi Perjalanan Dinas</h5>
+                                <p>Review dan validasi pengajuan perjalanan dinas dari pegawai.</p>
                             </div>
                         </div>
                         
@@ -561,22 +581,28 @@
                                 <i class="bx bx-printer"></i>
                             </div>
                             <div class="feature-content">
-                                <h5>Cetak Slip Gaji</h5>
-                                <p>Slip gaji dapat dilihat dan dicetak langsung melalui sistem.</p>
+                                <h5>Cetak Laporan Lengkap</h5>
+                                <p>Generate laporan slip gaji dan perjalanan dinas seluruh pegawai.</p>
                             </div>
                         </div>
                         
                         <div class="feature-item">
                             <div class="feature-icon">
-                                <i class="bx bx-lock"></i>
+                                <i class="bx bx-briefcase-alt-2"></i>
                             </div>
                             <div class="feature-content">
-                                <h5>Lebih Privat</h5>
-                                <p>Mengurangi risiko slip gaji terlihat oleh pegawai lain.</p>
+                                <h5>Kelola Pejabat & Template</h5>
+                                <p>Atur pejabat penanda tangan dan sesuaikan template dokumen.</p>
                             </div>
                         </div>
                     </div>
                     
+                    <div class="security-note">
+                        <p>
+                            <i class="bx bx-shield-alt"></i>
+                            <span>Akses penuh sebagai administrator sistem</span>
+                        </p>
+                    </div>
                     
                 </div>
             </div>
@@ -586,7 +612,7 @@
                 <div class="elegant-right">
                     <div class="login-header">
                         <h3>Masuk Sistem</h3>
-                        <p>Masuk untuk melihat dan mencetak slip gaji Anda</p>
+                        <p>Masuk sebagai Administrator untuk mengelola sistem</p>
                     </div>
                     
                     <!-- Flash Messages -->
@@ -647,7 +673,6 @@
                         <div class="login-footer">
                             <p class="copyright">
                                 © 2026 Magang Kemnaker • @fzlns21 | @dhiyaind
-                                <!-- <span class="version">Sistem Distribusi Slip Gaji</span> -->
                             </p>
                         </div>
                     </div>

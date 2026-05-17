@@ -215,11 +215,6 @@ public function show($id)
         'kelompokPerjalanan.subKelompok.nonpegawai.rincian.jenisBiaya',
     ])->findOrFail($id);
 
-    // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
-    if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-        abort(403, 'Anda tidak memiliki akses untuk melihat data ini.');
-    }
-
     $grandTotalPerjalanan = 0;
 
     foreach ($perjalanan->kelompokPerjalanan as $kelompok) {
@@ -252,11 +247,6 @@ public function edit($id)
         'kelompokPerjalanan.subKelompok.nonpegawai.rincian.jenisBiaya'
 
     ])->findOrFail($id);
-
-    // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
-    if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-        abort(403, 'Anda tidak memiliki akses untuk mengedit data ini.');
-    }
 
     $pegawai = Pegawai::all();
     $jenisBiaya = JenisBiaya::all();
@@ -396,11 +386,6 @@ public function edit($id)
     try {
 
         $perjalanan = PerjalananDinas::findOrFail($id);
-
-        // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
-        if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-            abort(403, 'Anda tidak memiliki akses untuk mengupdate data ini.');
-        }
 
         // ===============================
         // UPDATE PERJALANAN
@@ -564,11 +549,6 @@ public function edit($id)
         'kelompokPerjalanan.nonpegawai.rincian.jenisBiaya'
     ])->findOrFail($id);
 
-    // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
-    if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-        abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
-    }
-
     return Excel::download(
         new NominatifPerjalananExport($perjalanan),
         'Nominatif_'.$perjalanan->nama_kegiatan.'.xlsx'
@@ -578,6 +558,9 @@ public function edit($id)
     /**
      * =========================================================================
      * EXPORT NOMINATIF PER SURAT TUGAS (BERDASARKAN NOMOR ST)
+     * - Menggabungkan semua peserta dari semua kelompok (Panitia/Peserta/Narasumber)
+     *   yang memiliki nomor ST yang sama
+     * - Menggunakan format yang SAMA PERSIS dengan export keseluruhan
      * =========================================================================
      */
     public function exportNominatifPerSubKelompok($perjalananId, $subKelompokId)
@@ -587,11 +570,6 @@ public function edit($id)
             'pegawaiPerjalanan.rincian.jenisBiaya',
             'nonpegawai.rincian.jenisBiaya'
         ])->findOrFail($perjalananId);
-        
-        // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
-        if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-            abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
-        }
         
         $subKelompok = SubKelompokPerjalanan::findOrFail($subKelompokId);
         $nomorST = $subKelompok->nomor_st;
@@ -624,6 +602,9 @@ public function edit($id)
     /**
      * =========================================================================
      * EXPORT SBY PER SURAT TUGAS (BERDASARKAN NOMOR ST)
+     * - Satu file SBY untuk satu ST
+     * - Total biaya = akumulasi semua peserta dalam ST tersebut
+     * - Nama penerima diisi peserta pertama (urutan teratas)
      * =========================================================================
      */
     public function exportSbyPerSt($perjalananId, $subKelompokId)
@@ -633,11 +614,6 @@ public function edit($id)
             'pegawaiPerjalanan.rincian.jenisBiaya',
             'nonpegawai.rincian.jenisBiaya'
         ])->findOrFail($perjalananId);
-        
-        // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
-        if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-            abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
-        }
         
         $subKelompok = SubKelompokPerjalanan::findOrFail($subKelompokId);
         $nomorST = $subKelompok->nomor_st;
@@ -721,17 +697,13 @@ public function edit($id)
     /**
      * =========================================================================
      * EXPORT KUITANSI PER SURAT TUGAS (BERDASARKAN NOMOR ST)
+     * - Satu file Word berisi kuitansi untuk SEMUA peserta dalam ST tersebut
+     * - Menggabungkan semua subKelompok dengan nomor ST yang sama
      * =========================================================================
      */
     public function exportKuitansiPerSt($perjalananId, $subKelompokId)
     {
         $perjalanan = PerjalananDinas::findOrFail($perjalananId);
-        
-        // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
-        if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-            abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
-        }
-        
         $subKelompokAsal = SubKelompokPerjalanan::findOrFail($subKelompokId);
         $nomorST = $subKelompokAsal->nomor_st;
         
@@ -904,17 +876,13 @@ public function edit($id)
     /**
      * =========================================================================
      * EXPORT AMPLOP PER SURAT TUGAS (BERDASARKAN NOMOR ST)
+     * - Satu file Word berisi amplop untuk SEMUA peserta dalam ST tersebut
+     * - Menggabungkan semua subKelompok dengan nomor ST yang sama
      * =========================================================================
      */
     public function exportAmplopPerSt($perjalananId, $subKelompokId)
     {
         $perjalanan = PerjalananDinas::findOrFail($perjalananId);
-        
-        // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
-        if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-            abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
-        }
-        
         $subKelompokAsal = SubKelompokPerjalanan::findOrFail($subKelompokId);
         $nomorST = $subKelompokAsal->nomor_st;
         
@@ -1025,11 +993,6 @@ public function edit($id)
             ->findOrFail($ppId);
 
         $perjalanan = $pp->perjalananDinas;
-        
-        // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
-        if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-            abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
-        }
 
         $tanggalMulai = Carbon::parse($perjalanan->tanggal_mulai);
         $tanggalAkhir = Carbon::parse($perjalanan->tanggal_akhir);
@@ -1076,11 +1039,6 @@ public function edit($id)
             ->findOrFail($npId);
 
         $perjalanan = $np->perjalananDinas;
-        
-        // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
-        if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-            abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
-        }
 
         $namaKelompok = $np->subKelompok->kelompok->nama_kelompok;
 
@@ -1129,11 +1087,6 @@ public function edit($id)
             ->findOrFail($npId);
 
         $perjalanan = $np->perjalananDinas;
-        
-        // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
-        if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-            abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
-        }
 
         $tanggal_mulai = Carbon::parse($perjalanan->tanggal_mulai);
         $tanggal_akhir = Carbon::parse($perjalanan->tanggal_akhir);
@@ -1190,11 +1143,6 @@ public function edit($id)
 
     $perjalanan = $pp->perjalananDinas;
     $pegawai    = $pp->pegawai;
-    
-    // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
-    if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-        abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
-    }
 
     $tanggal = $perjalanan->tanggal_mulai;
 
@@ -1636,11 +1584,6 @@ public function edit($id)
     ])->findOrFail($npId);
 
     $perjalanan = $np->perjalananDinas;
-    
-    // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
-    if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-        abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
-    }
 
     $tanggal = $perjalanan->tanggal_mulai;
 
@@ -2080,12 +2023,6 @@ public function edit($id)
         'nonPegawai.rincian.jenisBiaya',
 
     ])->findOrFail($subKelompokId);
-
-    // CEK AKSES: Ambil perjalanan dari subKelompok
-    $perjalanan = $subKelompok->pegawai->first()?->perjalananDinas ?? $subKelompok->nonPegawai->first()?->perjalananDinas;
-    if ($perjalanan && Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-        abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
-    }
 
     // ===============================
     // GABUNG PESERTA
@@ -2552,11 +2489,6 @@ public function edit($id)
         try {
             $perjalanan = PerjalananDinas::findOrFail($id);
 
-            // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
-            if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-                abort(403, 'Anda tidak memiliki akses untuk menghapus data ini.');
-            }
-
             // ===============================
             // HAPUS RINCIAN PEGAWAI
             // ===============================
@@ -2688,11 +2620,6 @@ public function exportAllSbyZip($perjadinId)
         'pegawaiPerjalanan.rincian',
         'nonpegawai.rincian'
     ])->findOrFail($perjadinId);
-    
-    // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
-    if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-        abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
-    }
 
     $zip = new ZipArchive();
     $zipName = 'SBY-'.$perjadinId.'.zip';
@@ -3089,11 +3016,6 @@ public function exportAllKuitansiZip($perjadinId)
         'nonpegawai.rincian.jenisBiaya',
         'nonpegawai.subKelompok',
     ])->findOrFail($perjadinId);
-    
-    // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
-    if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-        abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
-    }
 
     $zip = new \ZipArchive();
     $zipName = 'Kuitansi-'.$perjadinId.'.zip';
@@ -3141,11 +3063,6 @@ public function exportAmplop($id)
 
     $perjalanan = $pp->perjalananDinas;
     $pegawai    = $pp->pegawai;
-    
-    // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
-    if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-        abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
-    }
 
     // HANYA YANG MASUK AMPLOP
     $rincian = $pp->rincian;
@@ -3307,11 +3224,6 @@ public function exportAmplopNonPegawai($npId)
     ])->findOrFail($npId);
 
     $perjalanan = $np->perjalananDinas;
-    
-    // CEK AKSES: Jika bukan admin dan bukan pembuat data, tolak akses
-    if (Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-        abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
-    }
 
     // HANYA YANG MASUK AMPLOP
     $rincian = $np->rincian;
@@ -3483,12 +3395,6 @@ public function exportAmplopST($subKelompokId)
         'nonPegawai.rincian.jenisBiaya',
 
     ])->findOrFail($subKelompokId);
-
-    // CEK AKSES: Ambil perjalanan dari subKelompok
-    $perjalanan = $subKelompok->pegawai->first()?->perjalananDinas ?? $subKelompok->nonPegawai->first()?->perjalananDinas;
-    if ($perjalanan && Auth::user()->role !== 'admin' && $perjalanan->created_by !== Auth::id()) {
-        abort(403, 'Anda tidak memiliki akses untuk mengexport data ini.');
-    }
 
     // ===============================
     // GABUNG SEMUA PESERTA
