@@ -11,6 +11,81 @@
 
 @section('content')
 
+{{-- ================= SEARCH & FILTER ================= --}}
+<div class="card card-shadow mb-4">
+    <div class="card-body p-3">
+        <form method="GET" action="{{ route('perjadin.index') }}" class="row g-3 align-items-end">
+            {{-- Search Nama Kegiatan --}}
+            <div class="col-md-4">
+                <label class="form-label fw-semibold small text-muted mb-1">
+                    <i class="fas fa-search me-1"></i>Cari Kegiatan
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="fas fa-tasks text-success"></i>
+                    </span>
+                    <input type="text" 
+                           name="search_kegiatan" 
+                           class="form-control border-start-0 ps-0" 
+                           placeholder="Nama kegiatan..." 
+                           value="{{ request('search_kegiatan') }}">
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <input type="month"
+                    name="bulan"
+                    class="form-control"
+                    value="{{ request('bulan') }}">
+            </div>
+
+            {{-- Tombol Aksi --}}
+            <div class="col-md-2">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-green w-100">
+                        <i class="fas fa-filter me-1"></i> Filter
+                    </button>
+                    <a href="{{ route('perjadin.index') }}" 
+                    class="btn btn-outline-secondary">
+                        Reset
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    /* Style tambahan untuk search & filter */
+    .input-group-text {
+        background-color: white;
+        border-right: none;
+    }
+    
+    .input-group .form-control:focus {
+        border-color: #dee2e6;
+        box-shadow: none;
+    }
+    
+    .input-group:focus-within {
+        box-shadow: 0 0 0 0.2rem rgba(22, 163, 74, 0.25);
+        border-radius: 0.375rem;
+    }
+    
+    .input-group:focus-within .input-group-text,
+    .input-group:focus-within .form-control {
+        border-color: #16a34a;
+    }
+    
+    @media (max-width: 768px) {
+        .filter-section .col-md-2,
+        .filter-section .col-md-3,
+        .filter-section .col-md-4 {
+            margin-bottom: 0.5rem;
+        }
+    }
+</style>
+
 <style>
 .btn-green {
     background: linear-gradient(135deg, #22c55e, #16a34a);

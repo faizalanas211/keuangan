@@ -42,13 +42,25 @@
             <a href="{{ asset('storage/templates/contoh_template_kuitansi_spd.docx') }}" 
                class="btn btn-outline-success btn-sm me-2" 
                target="_blank">
-               Download Kuitansi & SPD
+               Kuitansi & SPD
             </a>
 
-            <a href="{{ asset('templates/contoh_slip_gaji.docx') }}" 
-               class="btn btn-outline-primary btn-sm" 
+            <a href="{{ asset('storage/templates/contoh_template_sby.docx') }}" 
+               class="btn btn-outline-success btn-sm me-2" 
                target="_blank">
-               Download Slip Gaji
+               SBY
+            </a>
+
+            <a href="{{ asset('storage/templates/contoh_template_amplop.docx') }}" 
+               class="btn btn-outline-success btn-sm me-2" 
+               target="_blank">
+               Amplop
+            </a>
+
+            <a href="{{ asset('storage/templates/contoh_template_slip_gaji.docx') }}" 
+               class="btn btn-outline-success btn-sm" 
+               target="_blank">
+               Slip Gaji
             </a>
         </div>
 
@@ -91,6 +103,7 @@
                 <select name="jenis" class="form-select">
                     <option value="">-- Pilih Jenis --</option>
                     <option value="kuitansi_spd">Kuitansi dan SPD</option>
+                    <option value="sby">Surat Perintah Bayar</option>
                     <option value="amplop">Amplop</option>
                     <option value="slip_gaji">Slip Gaji</option>
                 </select>

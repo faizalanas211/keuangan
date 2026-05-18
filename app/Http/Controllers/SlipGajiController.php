@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pegawai;
+use App\Models\PejabatPeriode;
 use App\Models\Penghasilan;
 use App\Models\Potongan;
 use App\Models\Template;
@@ -52,10 +53,42 @@ class SlipGajiController extends Controller
             $pegawais = collect([$pegawai]);
 
             if ($request->filled('bulan')) {
+
                 $results = $this->generateSlip(
                     $pegawai->id,
                     $request->bulan
                 );
+
+            } else {
+
+                $penghasilans = Penghasilan::where('pegawai_id', $pegawai->id)
+                    ->whereYear('tanggal', now()->year)
+                    ->orderByDesc('tanggal')
+                    ->get();
+
+                foreach ($penghasilans as $penghasilan) {
+
+                    $bulan = Carbon::parse($penghasilan->tanggal)
+                        ->format('Y-m');
+
+                    $results[] = [
+                        'pegawai' => $pegawai,
+                        'bulan'   => $bulan,
+                        'periode' => Carbon::parse($penghasilan->tanggal)
+                                        ->translatedFormat('F Y'),
+                        'bersih'  => max(
+                            0,
+                            ($penghasilan->total_penghasilan ?? 0)
+                            -
+                            (
+                                Potongan::where('pegawai_id', $pegawai->id)
+                                    ->whereMonth('tanggal', Carbon::parse($penghasilan->tanggal)->month)
+                                    ->whereYear('tanggal', Carbon::parse($penghasilan->tanggal)->year)
+                                    ->value('total_potongan') ?? 0
+                            )
+                        )
+                    ];
+                }
             }
         }
 
@@ -184,6 +217,18 @@ class SlipGajiController extends Controller
         $totalPotongan    = $potongan->total_potongan ?? 0;
         $bersih           = max(0, $totalPenghasilan - $totalPotongan);
 
+        $tanggalSekarang = Carbon::now()->toDateString();
+
+        $kasubbag = PejabatPeriode::getByTanggal(
+            'Kasubbag Umum',
+            $tanggalSekarang
+        );
+
+        $bendahara = PejabatPeriode::getByTanggal(
+            'Bendahara Pengeluaran',
+            $tanggalSekarang
+        );
+
         // Ambil template dari tabel "templates" dengan jenis "slip_gaji"
         $template = Template::where('jenis', 'slip_gaji')->latest()->first();
 
@@ -207,7 +252,10 @@ class SlipGajiController extends Controller
         $templateProcessor->setValue('jabatan', $penghasilan->pegawai->jabatan);
         $templateProcessor->setValue('pangkat_golongan', $penghasilan->pegawai->pangkat_golongan);
         $templateProcessor->setValue('bulan_tahun', $periode->translatedFormat('F Y'));
-        $templateProcessor->setValue('tanggal_cetak', 'Ungaran, 1 ' . $periode->translatedFormat('F Y'));
+        $templateProcessor->setValue(
+            'tanggal_cetak',
+            'Ungaran, ' . Carbon::now()->translatedFormat('d F Y')
+        );
         
         // Penghasilan
         $templateProcessor->setValue('gaji_induk', number_format($penghasilan->gaji_induk ?? 0, 0, ',', '.'));
@@ -237,6 +285,26 @@ class SlipGajiController extends Controller
         // Total bersih
         $templateProcessor->setValue('bersih', number_format($bersih, 0, ',', '.'));
         $templateProcessor->setValue('terbilang', \App\Helpers\Terbilang::convert($bersih));
+
+        $templateProcessor->setValue(
+            'nama_kasubbag',
+            $kasubbag?->pegawai?->nama ?? '-'
+        );
+
+        $templateProcessor->setValue(
+            'nip_kasubbag',
+            $kasubbag?->pegawai?->nip ?? '-'
+        );
+
+        $templateProcessor->setValue(
+            'nama_bendahara',
+            $bendahara?->pegawai?->nama ?? '-'
+        );
+
+        $templateProcessor->setValue(
+            'nip_bendahara',
+            $bendahara?->pegawai?->nip ?? '-'
+        );
 
         // Simpan hasil
         $outputPath = storage_path('app/slip_gaji_' . $penghasilan->pegawai->nip . '_' . time() . '.docx');

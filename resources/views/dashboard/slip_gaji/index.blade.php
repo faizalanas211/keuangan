@@ -115,7 +115,15 @@
 
                 @foreach ($pegawais as $p)
                     <option value="{{ $p->id }}"
-                        {{ request('pegawai_id') == $p->id ? 'selected' : '' }}>
+                        {{
+                            request('pegawai_id',
+                                strtolower(auth()->user()->role) === 'pegawai'
+                                    ? auth()->user()->pegawai_id
+                                    : null
+                            ) == $p->id
+                                ? 'selected'
+                                : ''
+                        }}>
                         {{ $p->nama }} - {{ $p->nip }}
                     </option>
                 @endforeach

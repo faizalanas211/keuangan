@@ -65,6 +65,10 @@
                         {{ $template->jenis == 'kuitansi_spd' ? 'selected' : '' }}>
                         Kuitansi dan SPD
                     </option>
+                    <option value="sby"
+                        {{ $template->jenis == 'sby' ? 'selected' : '' }}>
+                        Surat Perintah Bayar
+                    </option>
                     <option value="amplop"
                         {{ $template->jenis == 'amplop' ? 'selected' : '' }}>
                         Amplop

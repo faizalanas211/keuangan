@@ -449,6 +449,23 @@
 @if(Auth::user()->role==='admin')
 
 <li class="menu-header small text-uppercase">
+    <span class="menu-header-text">Master Data</span>
+</li>
+
+<li class="menu-item {{ Request::is('dashboard/pegawai*') ? 'active' : '' }}">
+    <a href="{{ route('pegawai.index') }}" class="menu-link">
+        <i class="menu-icon bx bx-group"></i>
+        <div>Data Pegawai</div>
+    </a>
+</li>
+<li class="menu-item {{ Request::is('dashboard/pejabat*') ? 'active' : '' }}">
+    <a href="{{ route('pejabat.index') }}" class="menu-link">
+        <i class="menu-icon bx bx-briefcase-alt-2"></i>
+        <div>Data Pejabat</div>
+    </a>
+</li>
+
+<li class="menu-header small text-uppercase">
     <span class="menu-header-text">Gaji</span>
 </li>
 
@@ -477,23 +494,6 @@
 <li class="menu-item {{ Request::is('dashboard/perjadin*')?'active':'' }}">
     <a href="{{ route('perjadin.index') }}" class="menu-link">
         <i class="menu-icon bx bx-car"></i><div>Perjadin</div>
-    </a>
-</li>
-
-<li class="menu-header small text-uppercase">
-    <span class="menu-header-text">Master Data</span>
-</li>
-
-<li class="menu-item {{ Request::is('dashboard/pegawai*') ? 'active' : '' }}">
-    <a href="{{ route('pegawai.index') }}" class="menu-link">
-        <i class="menu-icon bx bx-group"></i>
-        <div>Data Pegawai</div>
-    </a>
-</li>
-<li class="menu-item {{ Request::is('dashboard/pejabat*') ? 'active' : '' }}">
-    <a href="{{ route('pejabat.index') }}" class="menu-link">
-        <i class="menu-icon bx bx-briefcase-alt-2"></i>
-        <div>Data Pejabat</div>
     </a>
 </li>
 

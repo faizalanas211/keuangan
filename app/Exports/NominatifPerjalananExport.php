@@ -25,33 +25,70 @@ class NominatifPerjalananExport implements FromCollection, WithCustomStartCell, 
 public function __construct($perjalanan)
 {
     Carbon::setLocale('id');
+
     $this->perjalanan = $perjalanan;
 
-    $this->columns = JenisBiaya::all()->map(function ($j) use ($perjalanan) {
+    // ===============================
+    // SEMUA RINCIAN YANG ADA
+    // ===============================
+    $allRincian = collect()
+        ->merge(
+            $perjalanan->pegawaiPerjalanan
+                ->flatMap->rincian
+        )
+        ->merge(
+            $perjalanan->nonpegawai
+                ->flatMap->rincian
+        );
 
-        $sample = collect()
-            ->merge($perjalanan->pegawaiPerjalanan->flatMap->rincian)
-            ->merge($perjalanan->nonpegawai->flatMap->rincian)
-            ->firstWhere('jenis_biaya_id', $j->id);
+    // ===============================
+    // AMBIL JENIS BIAYA YANG TERPAKAI
+    // ===============================
+    $jenisBiayaIds = $allRincian
+        ->pluck('jenis_biaya_id')
+        ->unique()
+        ->values();
+
+    $jenisBiaya = JenisBiaya::whereIn(
+            'id',
+            $jenisBiayaIds
+        )
+        ->get();
+
+    // ===============================
+    // GENERATE KOLOM
+    // ===============================
+    $this->columns = $jenisBiaya->map(function ($j) use ($allRincian) {
+
+        $sample = $allRincian
+            ->firstWhere(
+                'jenis_biaya_id',
+                $j->id
+            );
 
         $uraian = $sample->uraian ?? null;
+
         $isTransport = str_contains(
             strtolower($j->nama_biaya),
             'transport'
         );
 
         return [
+
             'jenis_id' => $j->id,
+
             'label' => strtoupper(
                 $j->nama_biaya .
                 (
                     !$isTransport && $uraian
-                        ? " ($uraian)"
+                        ? " ({$uraian})"
                         : ""
                 )
             ),
-            'is_transport' => str_contains(strtolower($j->nama_biaya), 'transport'),
-            'satuan' => $sample->satuan ?? 'VOL'
+
+            'is_transport' => $isTransport,
+
+            'satuan' => $sample->satuan ?? 'VOL',
         ];
     });
 }

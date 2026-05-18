@@ -24,7 +24,7 @@ class TemplateController extends Controller
     {
         $request->validate([
             'nama' => 'required|string|max:255',
-            'jenis' => 'required|in:kuitansi_spd,slip_gaji,amplop',
+            'jenis' => 'required|in:kuitansi_spd,slip_gaji,amplop,sby',
             'file' => 'required|file|mimes:docx'
         ]);
 
@@ -84,7 +84,7 @@ class TemplateController extends Controller
 
         $request->validate([
             'nama' => 'required|string|max:255',
-            'jenis' => 'required|in:kuitansi_spd,slip_gaji,amplop',
+            'jenis' => 'required|in:kuitansi_spd,slip_gaji,amplop,sby',
             'file' => 'nullable|file|mimes:docx'
         ]);
 
